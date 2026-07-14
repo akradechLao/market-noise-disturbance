@@ -92,7 +92,7 @@
         .main{max-width:1600px;margin:0 auto;padding:1.5rem 2rem}
 
         /* --- Stats Grid --- */
-        .stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.5rem}
+        .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
         .stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:1.25rem;transition:all 0.2s;position:relative;overflow:hidden}
         .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
         .stat-card.bg-noise::before{background:linear-gradient(90deg,var(--green),#86efac)}
@@ -347,12 +347,6 @@
                 <div class="stat-sub">ค่าระดับการรบกวน/Leq × 100</div>
                 <div class="stat-bar"><div class="stat-bar-fill" id="sDistPctBar" style="width:0%;background:linear-gradient(90deg,var(--red),#fca5a5)"></div></div>
             </div>
-            <div class="stat-card energy">
-                <div class="stat-label">Sound Energy Index</div>
-                <div class="stat-value" id="sEnergy">--<span class="stat-unit">W/m²</span></div>
-                <div class="stat-sub">ดัชนีพลังงานเสียง (10^(Leq/10))</div>
-                <div class="stat-bar"><div class="stat-bar-fill" id="sEnergyBar" style="width:0%;background:linear-gradient(90deg,var(--purple),#c084fc)"></div></div>
-            </div>
         </div>
 
         <!-- Charts -->
@@ -391,7 +385,7 @@
                         <label class="param-check">
                             <input type="checkbox" value="l90" checked onchange="toggleParam('l90',this.checked)">
                             <span class="param-check-mark" style="--c:var(--green)"></span>
-                            <div><span>L90</span><div class="param-check-desc">เสียงพื้นหลัง</div></div>
+                            <div><span>L90</span><div class="param-check-desc">เสียงพื้นฐาน</div></div>
                         </label>
                         <label class="param-check">
                             <input type="checkbox" value="leq" checked onchange="toggleParam('leq',this.checked)">
@@ -424,7 +418,7 @@
                 <div class="chart-header">
                     <div>
                         <div class="chart-title">กราฟเสียงรบกวน Real-time (Leq - L90)</div>
-                        <div class="chart-subtitle">แสดงเสียงพื้นหลัง, ค่า Leq, และเสียงรบกวน</div>
+                        <div class="chart-subtitle">แสดงเสียงพื้นฐาน, ค่า Leq, และเสียงรบกวน</div>
                     </div>
                     <div class="time-range-selector">
                         <button class="time-btn active" data-range="today">วันนี้</button>
@@ -433,7 +427,7 @@
                     </div>
                 </div>
                 <div class="chart-legend">
-                    <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>L90 (เสียงพื้นหลัง)</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>L90 (เสียงพื้นฐาน)</span>
                     <span class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span>Leq</span>
                     <span class="legend-item"><span class="legend-dot" style="background:var(--orange)"></span>เสียงรบกวน (Leq-L90)</span>
                     <span class="legend-item"><span class="legend-dot" style="background:var(--yellow)"></span>ค่าเฝ้าระวัง 55 dB</span>
@@ -538,9 +532,9 @@
                             <div class="info-card-desc">ค่า Leq-L90 สูงสุดที่บันทึก</div>
                         </div>
                         <div class="info-card">
-                            <div class="info-card-title">L90 เฉลี่ย (เสียงพื้นหลัง)</div>
+                            <div class="info-card-title">L90 เฉลี่ย (เสียงพื้นฐาน)</div>
                             <div class="info-card-value" id="avgL90" style="color:var(--green)">-- dB(A)</div>
-                            <div class="info-card-desc">ค่าเสียงพื้นหลังเฉลี่ยทั้งวัน</div>
+                            <div class="info-card-desc">ค่าเสียงพื้นฐานเฉลี่ยทั้งวัน</div>
                         </div>
                         <div class="info-card">
                             <div class="info-card-title">เวลาที่มีเสียงรบกวนสูงสุด</div>
@@ -715,14 +709,11 @@
             $('sLeq').innerHTML=last.leq+'<span class="stat-unit">dB(A)</span>';
             $('sDist').innerHTML=dist+'<span class="stat-unit">dB(A)</span>';
             $('sDistPct').innerHTML=last.distPct+'<span class="stat-unit">%</span>';
-            const energy=Math.pow(10,last.leq/10).toExponential(2);
-            $('sEnergy').innerHTML=energy+'<span class="stat-unit">W/m²</span>';
 
             $('sL90Bar').style.width=Math.min(100,last.l90/100*100)+'%';
             $('sLeqBar').style.width=Math.min(100,last.leq/100*100)+'%';
             $('sDistBar').style.width=Math.min(100,dist/30*100)+'%';
             $('sDistPctBar').style.width=Math.min(100,last.distPct)+'%';
-            $('sEnergyBar').style.width=Math.min(100,Math.log10(Math.pow(10,last.leq/10))/8*100)+'%';
 
             $('rtDisturbance').textContent=dist+' dB(A)';
             $('rtDisturbance').style.color=getDistLevel(dist).color;
@@ -785,7 +776,7 @@
                 };
             });
 
-            if(activeParams.l90)datasets.push({label:'L90 เสียงพื้นหลัง',data:data.map(d=>d.l90),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.08)',fill:true,tension:0.3,borderWidth:1.5,pointRadius:0,borderDash:[4,4]});
+            if(activeParams.l90)datasets.push({label:'L90 เสียงพื้นฐาน',data:data.map(d=>d.l90),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.08)',fill:true,tension:0.3,borderWidth:1.5,pointRadius:0,borderDash:[4,4]});
             if(activeParams.leq)datasets.push({label:'Leq',data:data.map(d=>d.leq),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:0.3,borderWidth:2,pointRadius:0});
             if(activeParams.disturbance){
                 datasets.push({label:'เสียงรบกวน (Leq-L90)',data:data.map(d=>d.disturbance),borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.12)',fill:true,tension:0.3,borderWidth:2,pointRadius:0});

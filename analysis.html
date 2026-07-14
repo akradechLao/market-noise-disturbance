@@ -146,7 +146,7 @@
                 </div>
             </div>
             <div style="margin-bottom:1rem">
-                <div class="form-label" style="margin-bottom:0.5rem">แหล่งค่า Background Noise (L90)</div>
+                <div class="form-label" style="margin-bottom:0.5rem">แหล่งค่าเสียงพื้นฐาน (L90)</div>
                 <div class="radio-group" id="bgModeGroup">
                     <label class="radio-opt selected" onclick="selectBgMode('auto')">
                         <input type="radio" name="bgMode" value="auto" checked>
@@ -156,14 +156,14 @@
                     <label class="radio-opt" onclick="selectBgMode('custom')">
                         <input type="radio" name="bgMode" value="custom">
                         <span class="radio-dot"></span>
-                        <div><strong>กำหนดเอง</strong> — กรอกค่า Background Noise ที่เคยตรวจวัดไว้</div>
+                        <div><strong>กำหนดเอง</strong> — กรอกค่าเสียงพื้นฐานที่เคยตรวจวัดไว้</div>
                     </label>
                 </div>
             </div>
             <div id="customBgSection" style="display:none;margin-bottom:1rem">
                 <div class="form-grid">
                     <div class="form-group">
-                        <div class="form-label">ค่า Background Noise (dB(A))</div>
+                        <div class="form-label">ค่าเสียงพื้นฐาน (dB(A))</div>
                         <input type="number" class="form-input" id="customBgValue" min="0" max="120" step="0.1" placeholder="เช่น 35.0">
                     </div>
                     <div class="form-group">
