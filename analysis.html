@@ -524,17 +524,12 @@
         function renderMainChart(data){
             if(anaChart)anaChart.destroy();
             const isDark=document.documentElement.getAttribute('data-theme')!=='light';
-            const hasCorrections = $('corrTime').checked || $('corrOutdoor').checked;
             
             const datasets = [
                 {label:'Leq',data:data.map(d=>d.leq),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:.3,borderWidth:1.5,pointRadius:0},
-                {label:'Background (L90)',data:data.map(d=>d.bg),borderColor:'#22c55e',backgroundColor:'transparent',tension:0,borderWidth:1,pointRadius:0,borderDash:[6,3]},
-                {label:'เสียงรบกวน',data:data.map(d=>d.disturbance),borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.1)',fill:true,tension:.3,borderWidth:2,pointRadius:0}
+                {label:'ระดับเสียงพื้นฐาน (L90)',data:data.map(d=>d.bg),borderColor:'#22c55e',backgroundColor:'transparent',tension:0,borderWidth:1,pointRadius:0,borderDash:[6,3]},
+                {label:'ค่าระดับการรบกวน',data:data.map(d=>d.disturbance),borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.1)',fill:true,tension:.3,borderWidth:2,pointRadius:0}
             ];
-            
-            if(hasCorrections){
-                datasets.push({label:'เสียงรบกวน (แก้ไขแล้ว)',data:data.map(d=>d.correctedDisturbance),borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,0.1)',fill:true,tension:.3,borderWidth:2,pointRadius:0,borderDash:[5,3]});
-            }
 
             anaChart=new Chart($('analysisChart'),{
                 type:'line',
@@ -557,20 +552,12 @@
 
         function renderStatChart(data){
             if(statCh)statCh.destroy();
-            const hasCorrections = $('corrTime').checked || $('corrOutdoor').checked;
-            const levels=[{l:'ปลอดภัย',min:0,max:3,c:'#22c55e'},{l:'เล็กน้อย',min:3,max:6,c:'#06b6d4'},{l:'ปานกลาง',min:6,max:alertLevel,c:'#eab308'},{l:'ค่อนข้างสูง',min:alertLevel,max:15,c:'#f97316'},{l:'สูง',min:15,max:99,c:'#ef4444'}];
+            const levels=[{l:'ไม่เป็นเสียงรบกวน',min:0,max:10,c:'#22c55e'},{l:'เป็นเสียงรบกวน',min:10,max:99,c:'#ef4444'}];
             const counts=levels.map(l=>data.filter(d=>d.disturbance>=l.min&&d.disturbance<l.max).length);
-            
-            let datasets = [{data:counts,backgroundColor:levels.map(l=>l.c),borderColor:'var(--card)',borderWidth:2}];
-            
-            if(hasCorrections){
-                const correctedCounts=levels.map(l=>data.filter(d=>d.correctedDisturbance>=l.min&&d.correctedDisturbance<l.max).length);
-                datasets.push({data:correctedCounts,backgroundColor:levels.map(l=>l.c+'99'),borderColor:getCSS('--card'),borderWidth:2,borderDash:[3,3]});
-            }
 
             statCh=new Chart($('statChart'),{
                 type:'doughnut',
-                data:{labels:levels.map(l=>l.l),datasets:datasets},
+                data:{labels:levels.map(l=>l.l),datasets:[{data:counts,backgroundColor:levels.map(l=>l.c),borderColor:getCSS('--card'),borderWidth:2}]},
                 options:{responsive:true,maintainAspectRatio:true,cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:getCSS('--t2'),font:{size:9},padding:6,usePointStyle:true}},tooltip:{backgroundColor:getCSS('--tooltip-bg'),borderColor:getCSS('--tooltip-border'),titleColor:getCSS('--t1'),bodyColor:getCSS('--t2'),callbacks:{label:ctx=>{const t=counts.reduce((a,b)=>a+b,0);return ctx.label+': '+ctx.parsed+' จุด ('+((ctx.parsed/t)*100).toFixed(1)+'%)'}}}}}
             });
         }
