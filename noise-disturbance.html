@@ -839,7 +839,7 @@
                     },
                     scales:{
                         x:{grid:{display:false},ticks:{color:'var(--chart-tick)',font:{size:9},maxRotation:45}},
-                        y:{min:0,max:25,grid:{color:'var(--chart-grid)'},ticks:{color:'var(--chart-tick)',font:{size:10},callback:v=>v+' dB'}}
+                        y:{min:0,max:Math.max(30,...avgDist)+5,grid:{color:'var(--chart-grid)'},ticks:{color:'var(--chart-tick)',font:{size:10},callback:v=>v+' dB'}}
                     }
                 }
             });
