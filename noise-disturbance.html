@@ -153,6 +153,18 @@
         .formula-text{font-size:0.85rem;font-family:'Courier New',monospace;color:var(--text-primary);background:var(--card-bg-alt);padding:0.5rem 0.75rem;border-radius:8px;margin-bottom:0.5rem}
         .formula-desc{font-size:0.65rem;color:var(--text-secondary);line-height:1.5}
 
+        /* --- Correction Factor Panel --- */
+        .correction-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:1.25rem;margin-bottom:1.5rem}
+        .correction-title{font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;color:var(--purple)}
+        .correction-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+        .correction-item{background:var(--card-bg-alt);border:1px solid var(--border);border-radius:10px;padding:0.75rem}
+        .correction-item-label{font-size:0.7rem;color:var(--text-muted);margin-bottom:0.3rem;font-weight:500}
+        .correction-item-value{font-size:1rem;font-weight:700;color:var(--purple)}
+        .correction-item-desc{font-size:0.6rem;color:var(--text-secondary);margin-top:0.25rem}
+        .correction-toggle{display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem}
+        .correction-toggle label{font-size:0.7rem;color:var(--text-secondary);cursor:pointer}
+        .correction-toggle input[type="checkbox"]{width:16px;height:16px;accent-color:var(--purple)}
+
         /* --- Classification Table --- */
         .class-table{width:100%;font-size:0.7rem;border-collapse:collapse}
         .class-table th{background:var(--card-bg-alt);padding:0.5rem;text-align:left;border-bottom:1px solid var(--border)}
@@ -243,6 +255,58 @@
                 <strong>L90</strong> = ค่าระดับเสียงที่มีเวลาสะสมมากกว่า 90% ของช่วงเวลาที่วัดได้ ใช้เป็นค่า <strong>เสียงพื้นหลัง (Background Noise)</strong><br>
                 <strong>Leq</strong> = ค่าระดับเสียงเฉลี่ยเทียบเท่า (Equivalent Continuous Sound Level)<br>
                 <strong>Leq - L90</strong> = ค่าเสียงที่ <strong>กิจกรรมตลาด</strong> เพิ่มขึ้นเหนือเสียงพื้นหลัง = <strong>ระดับเสียงรบกวน</strong>
+            </div>
+        </div>
+
+        <!-- Thai Legal Correction Factors -->
+        <div class="correction-panel">
+            <div class="correction-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                ปัจจัยแก้ไขตามพระราชบัญญัติ/ประกาศ (Thai Legal Correction Factors)
+            </div>
+            <div class="correction-grid">
+                <div class="correction-item">
+                    <div class="correction-item-label">เวลา (Time of Day)</div>
+                    <div class="correction-item-value" id="corrTime">-10 dB</div>
+                    <div class="correction-item-desc">ช่วงเวลากลางคืน 22:00-06:00 ลด 10 dB ตามประกาศ กมล.</div>
+                    <div class="correction-toggle">
+                        <input type="checkbox" id="enableTimeCorr" checked onchange="updateCorrections()">
+                        <label for="enableTimeCorr">เปิดใช้งาน</label>
+                    </div>
+                </div>
+                <div class="correction-item">
+                    <div class="correction-item-label">ระยะเวลาวัด (Duration)</div>
+                    <div class="correction-item-value" id="corrDuration">-10 log(T/T₀) dB</div>
+                    <div class="correction-item-desc">L₁ = L - 10 log₁₀(T/T₀) เมื่อ T₀ = 1 ชม.</div>
+                    <div class="correction-toggle">
+                        <input type="checkbox" id="enableDurationCorr" onchange="updateCorrections()">
+                        <label for="enableDurationCorr">เปิดใช้งาน</label>
+                    </div>
+                </div>
+                <div class="correction-item">
+                    <div class="correction-item-label">ภายนอกอาคาร (Outdoor Music/TV)</div>
+                    <div class="correction-item-value" id="corrOutdoor">+5~+10 dB</div>
+                    <div class="correction-item-desc">เพิ่มค่าเสียงรบกวน 5-10 dB สำหรับเสียงดนตรี/ทีวีภายนอก</div>
+                    <div class="correction-toggle">
+                        <input type="checkbox" id="enableOutdoorCorr" onchange="updateCorrections()">
+                        <label for="enableOutdoorCorr">เปิดใช้งาน</label>
+                    </div>
+                </div>
+                <div class="correction-item">
+                    <div class="correction-item-label">Ldn (Day-Night Average)</div>
+                    <div class="correction-item-value" id="corrLdn">คำนวณ Ldn</div>
+                    <div class="correction-item-desc">Ldn = 10 log[1/24 × (15×10^(Lday/10) + 9×10^((Lnight+10)/10))]</div>
+                    <div class="correction-toggle">
+                        <input type="checkbox" id="enableLdn" onchange="updateCorrections()">
+                        <label for="enableLdn">เปิดใช้งาน</label>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -501,6 +565,58 @@
         function $(id){return document.getElementById(id)}
         function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 
+        // Thai Legal Correction Factors
+        let correctionEnabled = {
+            time: true,
+            duration: false,
+            outdoor: false,
+            ldn: false
+        };
+
+        window.updateCorrections = function(){
+            correctionEnabled.time = $('enableTimeCorr').checked;
+            correctionEnabled.duration = $('enableDurationCorr').checked;
+            correctionEnabled.outdoor = $('enableOutdoorCorr').checked;
+            correctionEnabled.ldn = $('enableLdn').checked;
+            if(lastDataCache.length) updateDisturbanceChart(lastDataCache);
+        };
+
+        function getTimeCorrection(hour){
+            if(!correctionEnabled.time) return 0;
+            // 22:00-06:00 = nighttime, -10 dB
+            if(hour >= 22 || hour < 6) return -10;
+            // 06:00-22:00 = daytime, 0 dB (no correction)
+            return 0;
+        }
+
+        function getDurationCorrection(measurementMinutes){
+            if(!correctionEnabled.duration) return 0;
+            // L1 = L - 10 log10(T/T0) where T0 = 60 min (1 hour)
+            const T = measurementMinutes;
+            const T0 = 60;
+            return -10 * Math.log10(T / T0);
+        }
+
+        function getOutdoorCorrection(){
+            if(!correctionEnabled.outdoor) return 0;
+            return 7; // Middle of +5~+10 range
+        }
+
+        function calculateLdn(data){
+            if(!correctionEnabled.ldn) return null;
+            const dayData = data.filter(d => d.datetime.getHours() >= 7 && d.datetime.getHours() < 22);
+            const nightData = data.filter(d => d.datetime.getHours() >= 22 || d.datetime.getHours() < 7);
+            
+            if(!dayData.length && !nightData.length) return null;
+            
+            const avgDay = dayData.length ? dayData.reduce((s,d) => s + d.leq, 0) / dayData.length : 0;
+            const avgNight = nightData.length ? nightData.reduce((s,d) => s + d.leq, 0) / nightData.length : 0;
+            
+            // Ldn = 10 log[1/24 * (15 * 10^(Lday/10) + 9 * 10^((Lnight+10)/10))]
+            const ldn = 10 * Math.log10((1/24) * (15 * Math.pow(10, avgDay/10) + 9 * Math.pow(10, (avgNight + 10)/10)));
+            return +ldn.toFixed(1);
+        }
+
         function getDistLevel(d){
             if(d<=3) return {label:'แทบไม่มี',cls:'val-safe',color:'var(--green)'};
             if(d<=6) return {label:'เล็กน้อย',cls:'val-low',color:'var(--cyan)'};
@@ -621,9 +737,29 @@
             lastDataCache=data;
             const labels=data.map(d=>d.time);
             const datasets=[];
+            
+            // Apply correction factors to data
+            const correctedData = data.map(d => {
+                const hour = d.datetime.getHours();
+                const timeCorr = getTimeCorrection(hour);
+                const outdoorCorr = getOutdoorCorrection();
+                const correctedDisturbance = Math.max(0, d.disturbance + timeCorr + outdoorCorr);
+                return {
+                    ...d,
+                    correctedDisturbance: +correctedDisturbance.toFixed(1),
+                    correctedLeq: +(d.leq + timeCorr + outdoorCorr).toFixed(1)
+                };
+            });
+
             if(activeParams.l90)datasets.push({label:'L90 เสียงพื้นหลัง',data:data.map(d=>d.l90),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.08)',fill:true,tension:0.3,borderWidth:1.5,pointRadius:0,borderDash:[4,4]});
             if(activeParams.leq)datasets.push({label:'Leq',data:data.map(d=>d.leq),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:0.3,borderWidth:2,pointRadius:0});
-            if(activeParams.disturbance)datasets.push({label:'เสียงรบกวน (Leq-L90)',data:data.map(d=>d.disturbance),borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.12)',fill:true,tension:0.3,borderWidth:2,pointRadius:0});
+            if(activeParams.disturbance){
+                datasets.push({label:'เสียงรบกวน (Leq-L90)',data:data.map(d=>d.disturbance),borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.12)',fill:true,tension:0.3,borderWidth:2,pointRadius:0});
+                // Add corrected disturbance line if corrections are enabled
+                if(correctionEnabled.time || correctionEnabled.outdoor){
+                    datasets.push({label:'เสียงรบกวน (แก้ไขแล้ว)',data:correctedData.map(d=>d.correctedDisturbance),borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,0.1)',fill:true,tension:0.3,borderWidth:2,pointRadius:0,borderDash:[5,3]});
+                }
+            }
             if(activeParams.l10)datasets.push({label:'L10',data:data.map(d=>d.l10),borderColor:'#06b6d4',backgroundColor:'transparent',tension:0.3,borderWidth:1.5,pointRadius:0,borderDash:[2,2]});
             if(activeParams.lmax)datasets.push({label:'LMax',data:data.map(d=>d.lmax),borderColor:'#ef4444',backgroundColor:'transparent',tension:0.3,borderWidth:1.5,pointRadius:0});
             if(!datasets.length)datasets.push({label:'Leq',data:data.map(d=>d.leq),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:0.3,borderWidth:2,pointRadius:0});

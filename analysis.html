@@ -54,6 +54,18 @@
         .radio-opt.selected .radio-dot{border-color:var(--accent)}
         .radio-opt.selected .radio-dot::after{content:'';width:7px;height:7px;border-radius:50%;background:var(--accent)}
 
+        /* --- Correction Factor Section --- */
+        .correction-section{background:var(--alt);border:1px solid var(--border);border-radius:12px;padding:1rem;margin:1rem 0}
+        .correction-title{font-size:0.8rem;font-weight:600;color:var(--purple);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem}
+        .correction-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.75rem}
+        .corr-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.75rem}
+        .corr-item-label{font-size:0.65rem;color:var(--t3);margin-bottom:0.3rem;font-weight:500}
+        .corr-item-value{font-size:0.9rem;font-weight:700;color:var(--purple)}
+        .corr-item-desc{font-size:0.6rem;color:var(--t2);margin-top:0.25rem}
+        .corr-toggle{display:flex;align-items:center;gap:0.4rem;margin-top:0.5rem}
+        .corr-toggle label{font-size:0.7rem;color:var(--t2);cursor:pointer}
+        .corr-toggle input[type="checkbox"]{width:14px;height:14px;accent-color:var(--purple)}
+
         .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.75rem;margin-bottom:1rem}
         .summary-card{background:var(--alt);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center}
         .summary-label{font-size:0.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.3rem}
@@ -160,6 +172,47 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Thai Legal Correction Factors -->
+            <div class="correction-section">
+                <div class="correction-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    ปัจจัยแก้ไขตามพระราชบัญญัติ/ประกาศ (Thai Legal Correction Factors)
+                </div>
+                <div class="correction-grid">
+                    <div class="corr-item">
+                        <div class="corr-item-label">เวลา (Time of Day)</div>
+                        <div class="corr-item-value">-10 dB</div>
+                        <div class="corr-item-desc">ช่วงเวลากลางคืน 22:00-06:00 ลด 10 dB ตามประกาศ กมล.</div>
+                        <div class="corr-toggle">
+                            <input type="checkbox" id="corrTime" checked>
+                            <label for="corrTime">เปิดใช้งาน</label>
+                        </div>
+                    </div>
+                    <div class="corr-item">
+                        <div class="corr-item-label">ภายนอกอาคาร (Outdoor Music/TV)</div>
+                        <div class="corr-item-value">+5~+10 dB</div>
+                        <div class="corr-item-desc">เพิ่มค่าเสียงรบกวน 5-10 dB สำหรับเสียงดนตรี/ทีวีภายนอก</div>
+                        <div class="corr-toggle">
+                            <input type="checkbox" id="corrOutdoor">
+                            <label for="corrOutdoor">เปิดใช้งาน</label>
+                        </div>
+                    </div>
+                    <div class="corr-item">
+                        <div class="corr-item-label">Ldn (Day-Night Average)</div>
+                        <div class="corr-item-value">คำนวณ Ldn</div>
+                        <div class="corr-item-desc">Ldn = 10 log[1/24 × (15×10^(Lday/10) + 9×10^((Lnight+10)/10))]</div>
+                        <div class="corr-toggle">
+                            <input type="checkbox" id="corrLdn">
+                            <label for="corrLdn">เปิดใช้งาน</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="form-grid">
                 <div class="form-group">
                     <div class="form-label">ค่าเฝ้าระวัง (dB(A))</div>
@@ -225,7 +278,7 @@
                 </div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>#</th><th>วันที่</th><th>เวลา</th><th>Leq</th><th>L90</th><th>Background</th><th>เสียงรบกวน</th><th>% สูงกว่า BG</th><th>ระดับ</th></tr></thead>
+                        <thead><tr><th>#</th><th>วันที่</th><th>เวลา</th><th>Leq</th><th>L90</th><th>Background</th><th>เสียงรบกวน</th><th>% สูงกว่า BG</th><th>ระดับ</th><th>แก้ไขแล้ว</th><th>ระดับ(แก้ไข)</th></tr></thead>
                         <tbody id="resultTable"></tbody>
                     </table>
                 </div>
@@ -261,6 +314,50 @@
         let threshold=55;
         let alertLevel=10;
         let anaChart=null, statCh=null, exceedCh=null;
+
+        // Correction factor functions
+        function getTimeCorrection(hour){
+            if(!$('corrTime').checked) return 0;
+            // 22:00-06:00 = nighttime, -10 dB
+            if(hour >= 22 || hour < 6) return -10;
+            return 0;
+        }
+
+        function getOutdoorCorrection(){
+            if(!$('corrOutdoor').checked) return 0;
+            return 7; // Middle of +5~+10 range
+        }
+
+        function calculateLdn(data){
+            if(!$('corrLdn').checked) return null;
+            const dayData = data.filter(d => d.hour >= 7 && d.hour < 22);
+            const nightData = data.filter(d => d.hour >= 22 || d.hour < 7);
+            
+            if(!dayData.length && !nightData.length) return null;
+            
+            const avgDay = dayData.length ? dayData.reduce((s,d) => s + d.leq, 0) / dayData.length : 0;
+            const avgNight = nightData.length ? nightData.reduce((s,d) => s + d.leq, 0) / nightData.length : 0;
+            
+            // Ldn = 10 log[1/24 * (15 * 10^(Lday/10) + 9 * 10^((Lnight+10)/10))]
+            const ldn = 10 * Math.log10((1/24) * (15 * Math.pow(10, avgDay/10) + 9 * Math.pow(10, (avgNight + 10)/10)));
+            return +ldn.toFixed(1);
+        }
+
+        function applyCorrections(data){
+            return data.map(d => {
+                const hour = d.hour;
+                const timeCorr = getTimeCorrection(hour);
+                const outdoorCorr = getOutdoorCorrection();
+                const correctedDisturbance = Math.max(0, d.disturbance + timeCorr + outdoorCorr);
+                return {
+                    ...d,
+                    correctedDisturbance: +correctedDisturbance.toFixed(1),
+                    correctedLeq: +(d.leq + timeCorr + outdoorCorr).toFixed(1),
+                    timeCorrection: timeCorr,
+                    outdoorCorrection: outdoorCorr
+                };
+            });
+        }
 
         // Theme
         const savedTheme=localStorage.getItem('theme')||'dark';
@@ -359,12 +456,18 @@
                 d.level=getLevel(d.disturbance,alertLevel);
             });
 
-            renderResults();
+            // Apply Thai legal corrections
+            analysisData = applyCorrections(analysisData);
+
+            // Calculate Ldn if enabled
+            const ldnValue = calculateLdn(analysisData);
+
+            renderResults(ldnValue);
             $('resultSection').style.display='block';
             $('resultSection').scrollIntoView({behavior:'smooth',block:'start'});
         };
 
-        function renderResults(){
+        function renderResults(ldnValue){
             const data=analysisData;
             const total=data.length;
             const exceedCount=data.filter(d=>d.exceedsThreshold).length;
@@ -374,8 +477,17 @@
             const avgLeq=+(data.reduce((s,d)=>s+d.leq,0)/total).toFixed(1);
             const exceedPct=+((exceedCount/total)*100).toFixed(1);
 
+            // Calculate corrected statistics if corrections are enabled
+            const hasCorrections = $('corrTime').checked || $('corrOutdoor').checked;
+            let avgCorrectedDist = null;
+            let maxCorrectedDist = null;
+            if(hasCorrections){
+                avgCorrectedDist = +(data.reduce((s,d)=>s+d.correctedDisturbance,0)/total).toFixed(1);
+                maxCorrectedDist = Math.max(...data.map(d=>d.correctedDisturbance));
+            }
+
             // Summary
-            $('resultSummary').innerHTML=`
+            let summaryHTML = `
                 <div class="summary-card"><div class="summary-label">Background Noise (L90 เฉลี่ย)</div><div class="summary-value" style="color:var(--green)">${bgNoiseValue}<span class="summary-unit"> dB(A)</span></div></div>
                 <div class="summary-card"><div class="summary-label">Leq เฉลี่ย</div><div class="summary-value" style="color:var(--accent)">${avgLeq}<span class="summary-unit"> dB(A)</span></div></div>
                 <div class="summary-card"><div class="summary-label">เสียงรบกวนเฉลี่ย</div><div class="summary-value" style="color:var(--orange)">${avgDist}<span class="summary-unit"> dB(A)</span></div></div>
@@ -383,6 +495,23 @@
                 <div class="summary-card"><div class="summary-label">จุดเกินค่าเฝ้าระวัง</div><div class="summary-value" style="color:var(--yellow)">${exceedCount}<span class="summary-unit"> / ${total} จุด</span></div></div>
                 <div class="summary-card"><div class="summary-label">% เกินค่าเฝ้าระวัง</div><div class="summary-value" style="color:${exceedPct>10?'var(--red)':'var(--yellow)'}">${exceedPct}<span class="summary-unit"> %</span></div></div>
             `;
+            
+            // Add corrected values if available
+            if(hasCorrections){
+                summaryHTML += `
+                    <div class="summary-card" style="border-color:var(--purple)"><div class="summary-label">เสียงรบกวนแก้ไขแล้ว (เฉลี่ย)</div><div class="summary-value" style="color:var(--purple)">${avgCorrectedDist}<span class="summary-unit"> dB(A)</span></div></div>
+                    <div class="summary-card" style="border-color:var(--purple)"><div class="summary-label">เสียงรบกวนแก้ไขแล้ว (สูงสุด)</div><div class="summary-value" style="color:var(--purple)">${maxCorrectedDist}<span class="summary-unit"> dB(A)</span></div></div>
+                `;
+            }
+            
+            // Add Ldn if calculated
+            if(ldnValue !== null){
+                summaryHTML += `
+                    <div class="summary-card" style="border-color:var(--purple)"><div class="summary-label">Ldn (Day-Night Average)</div><div class="summary-value" style="color:var(--purple)">${ldnValue}<span class="summary-unit"> dB(A)</span></div></div>
+                `;
+            }
+
+            $('resultSummary').innerHTML = summaryHTML;
 
             renderMainChart(data);
             renderStatChart(data);
@@ -393,15 +522,23 @@
         function renderMainChart(data){
             if(anaChart)anaChart.destroy();
             const isDark=document.documentElement.getAttribute('data-theme')!=='light';
+            const hasCorrections = $('corrTime').checked || $('corrOutdoor').checked;
+            
+            const datasets = [
+                {label:'Leq',data:data.map(d=>d.leq),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:.3,borderWidth:1.5,pointRadius:0},
+                {label:'Background (L90)',data:data.map(d=>d.bg),borderColor:'#22c55e',backgroundColor:'transparent',tension:0,borderWidth:1,pointRadius:0,borderDash:[6,3]},
+                {label:'เสียงรบกวน',data:data.map(d=>d.disturbance),borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.1)',fill:true,tension:.3,borderWidth:2,pointRadius:0}
+            ];
+            
+            if(hasCorrections){
+                datasets.push({label:'เสียงรบกวน (แก้ไขแล้ว)',data:data.map(d=>d.correctedDisturbance),borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,0.1)',fill:true,tension:.3,borderWidth:2,pointRadius:0,borderDash:[5,3]});
+            }
+
             anaChart=new Chart($('analysisChart'),{
                 type:'line',
                 data:{
                     labels:data.map(d=>d.date+' '+d.time),
-                    datasets:[
-                        {label:'Leq',data:data.map(d=>d.leq),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:.3,borderWidth:1.5,pointRadius:0},
-                        {label:'Background (L90)',data:data.map(d=>d.bg),borderColor:'#22c55e',backgroundColor:'transparent',tension:0,borderWidth:1,pointRadius:0,borderDash:[6,3]},
-                        {label:'เสียงรบกวน',data:data.map(d=>d.disturbance),borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.1)',fill:true,tension:.3,borderWidth:2,pointRadius:0}
-                    ]
+                    datasets:datasets
                 },
                 options:{
                     responsive:true,maintainAspectRatio:true,interaction:{mode:'index',intersect:false},
@@ -418,11 +555,20 @@
 
         function renderStatChart(data){
             if(statCh)statCh.destroy();
+            const hasCorrections = $('corrTime').checked || $('corrOutdoor').checked;
             const levels=[{l:'ปลอดภัย',min:0,max:3,c:'#22c55e'},{l:'เล็กน้อย',min:3,max:6,c:'#06b6d4'},{l:'ปานกลาง',min:6,max:alertLevel,c:'#eab308'},{l:'ค่อนข้างสูง',min:alertLevel,max:15,c:'#f97316'},{l:'สูง',min:15,max:99,c:'#ef4444'}];
             const counts=levels.map(l=>data.filter(d=>d.disturbance>=l.min&&d.disturbance<l.max).length);
+            
+            let datasets = [{data:counts,backgroundColor:levels.map(l=>l.c),borderColor:'var(--card)',borderWidth:2}];
+            
+            if(hasCorrections){
+                const correctedCounts=levels.map(l=>data.filter(d=>d.correctedDisturbance>=l.min&&d.correctedDisturbance<l.max).length);
+                datasets.push({data:correctedCounts,backgroundColor:levels.map(l=>l.c+'99'),borderColor:'var(--card)',borderWidth:2,borderDash:[3,3]});
+            }
+
             statCh=new Chart($('statChart'),{
                 type:'doughnut',
-                data:{labels:levels.map(l=>l.l),datasets:[{data:counts,backgroundColor:levels.map(l=>l.c),borderColor:'var(--card)',borderWidth:2}]},
+                data:{labels:levels.map(l=>l.l),datasets:datasets},
                 options:{responsive:true,maintainAspectRatio:true,cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:'var(--t2)',font:{size:9},padding:6,usePointStyle:true}},tooltip:{callbacks:{label:ctx=>{const t=counts.reduce((a,b)=>a+b,0);return ctx.label+': '+ctx.parsed+' จุด ('+((ctx.parsed/t)*100).toFixed(1)+'%)'}}}}}
             });
         }
@@ -459,7 +605,13 @@
         }
 
         function renderTable(data){
+            const hasCorrections = $('corrTime').checked || $('corrOutdoor').checked;
             $('resultTable').innerHTML=data.map((d,i)=>{
+                let correctedDistCell = '';
+                if(hasCorrections){
+                    const corrLevel = getLevel(d.correctedDisturbance, alertLevel);
+                    correctedDistCell = `<td style="color:var(--purple);font-weight:700">${d.correctedDisturbance}</td><td><span class="badge ${corrLevel.cls}">${corrLevel.label}</span></td>`;
+                }
                 return `<tr>
                     <td style="color:var(--t3)">${i+1}</td>
                     <td>${d.date}</td><td>${d.time}</td>
@@ -474,6 +626,7 @@
                         <span style="font-weight:600;color:${d.pctAbove>50?'var(--red)':'var(--t2)'}">${d.pctAbove}%</span>
                     </td>
                     <td><span class="badge ${d.level.cls}">${d.level.label}</span></td>
+                    ${correctedDistCell}
                     ${d.exceedsThreshold?'<td style="color:var(--red);font-weight:700">⚠ เกิน</td>':'<td></td>'}
                 </tr>`;
             }).join('');
@@ -484,9 +637,17 @@
 
         window.exportCSV=function(){
             if(!analysisData.length){alert('กรุณาวิเคราะห์ข้อมูลก่อน');return;}
-            let csv='No,Date,Time,Leq,L90,Background,Disturbance,%Above,Level,Exceeds\n';
+            const hasCorrections = $('corrTime').checked || $('corrOutdoor').checked;
+            let csv='No,Date,Time,Leq,L90,Background,Disturbance,%Above,Level';
+            if(hasCorrections) csv+=',CorrectedDisturbance,CorrectedLevel';
+            csv+=',Exceeds\n';
             analysisData.forEach((d,i)=>{
-                csv+=`${i+1},"${d.date}","${d.time}",${d.leq},${d.l90},${d.bg},${d.disturbance},${d.pctAbove},"${d.level.label}",${d.exceedsThreshold}\n`;
+                csv+=`${i+1},"${d.date}","${d.time}",${d.leq},${d.l90},${d.bg},${d.disturbance},${d.pctAbove},"${d.level.label}"`;
+                if(hasCorrections){
+                    const corrLevel = getLevel(d.correctedDisturbance, alertLevel);
+                    csv+=`,${d.correctedDisturbance},"${corrLevel.label}"`;
+                }
+                csv+=`,${d.exceedsThreshold}\n`;
             });
             const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
             const a=document.createElement('a');a.href=URL.createObjectURL(blob);
@@ -499,6 +660,9 @@
             const exceedCount=analysisData.filter(d=>d.exceedsThreshold).length;
             const avgDist=+(analysisData.reduce((s,d)=>s+d.disturbance,0)/analysisData.length).toFixed(1);
             const maxDist=Math.max(...analysisData.map(d=>d.disturbance));
+            const hasCorrections = $('corrTime').checked || $('corrOutdoor').checked;
+            const ldnValue = calculateLdn(analysisData);
+            
             let html=`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>รายงานวิเคราะห์เสียงรบกวน</title>
 <style>body{font-family:'Sarabun',sans-serif;padding:2rem;color:#333;max-width:900px;margin:0 auto}
 h1{font-size:1.3rem;border-bottom:2px solid #333;padding-bottom:0.5rem}h2{font-size:1rem;margin-top:1.5rem;color:#555}
@@ -509,12 +673,14 @@ th{background:#f0f0f0;padding:6px 8px;border:1px solid #ddd;text-align:left}td{p
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin:1rem 0}
 .s-card{background:#f8f9fa;border:1px solid #e5e7eb;border-radius:8px;padding:0.75rem;text-align:center}
 .s-card .label{font-size:0.65rem;color:#888;text-transform:uppercase}.s-card .value{font-size:1.2rem;font-weight:700}
+.corr{border-color:#9333ea!important}.corr-value{color:#9333ea}
 @media print{body{padding:1rem}}</style></head><body>
 <h1>รายงานผลการวิเคราะห์เสียงรบกวน</h1>
 <p><strong>สถานที่:</strong> ตลาด Bigfood แหลมฉบัง</p>
 <p><strong>ช่วงวัน-เวลา:</strong> ${$('inpStartDate').value} ${$('inpStartTime').value} ถึง ${$('inpEndDate').value} ${$('inpEndTime').value}</p>
 <p><strong>Background Noise:</strong> ${bgNoiseValue} dB(A) ${bgMode==='auto'?'(คำนวณจาก L90 เฉลี่ย)':'(กำหนดเอง)'}</p>
 <p><strong>ค่าเฝ้าระวัง:</strong> ${threshold} dB(A)</p>
+${hasCorrections?'<p><strong>ปัจจัยแก้ไข:</strong> ใช้ปัจจัยแก้ไขตามพระราชบัญญัติ/ประกาศ</p>':''}
 <div class="summary">
 <div class="s-card"><div class="label">Background Noise</div><div class="value safe">${bgNoiseValue} dB(A)</div></div>
 <div class="s-card"><div class="label">เสียงรบกวนเฉลี่ย</div><div class="value" style="color:#f97316">${avgDist} dB(A)</div></div>
@@ -522,11 +688,30 @@ th{background:#f0f0f0;padding:6px 8px;border:1px solid #ddd;text-align:left}td{p
 <div class="s-card"><div class="label">จุดเกินค่าเฝ้าระวัง</div><div class="value" style="color:#eab308">${exceedCount} / ${analysisData.length} จุด</div></div>
 <div class="s-card"><div class="label">% เกินค่าเฝ้าระวัง</div><div class="value" style="color:${exceedCount/analysisData.length>0.1?'#dc2626':'#ca8a04'}">${((exceedCount/analysisData.length)*100).toFixed(1)}%</div></div>
 <div class="s-card"><div class="label">จำนวนข้อมูลทั้งหมด</div><div class="value" style="color:#3b82f6">${analysisData.length} รายการ</div></div>
-</div>
-<h2>ตารางผลการวิเคราะห์</h2>
-<table><thead><tr><th>#</th><th>วันที่</th><th>เวลา</th><th>Leq</th><th>Background</th><th>เสียงรบกวน</th><th>%สูงกว่า BG</th><th>ระดับ</th></tr></thead><tbody>`;
+</div>`;
+            
+            if(hasCorrections){
+                const avgCorrectedDist = +(analysisData.reduce((s,d)=>s+d.correctedDisturbance,0)/analysisData.length).toFixed(1);
+                const maxCorrectedDist = Math.max(...analysisData.map(d=>d.correctedDisturbance));
+                html+=`<div class="summary" style="grid-template-columns:repeat(2,1fr)">
+<div class="s-card corr"><div class="label">เสียงรบกวนแก้ไขแล้ว (เฉลี่ย)</div><div class="value corr-value">${avgCorrectedDist} dB(A)</div></div>
+<div class="s-card corr"><div class="label">เสียงรบกวนแก้ไขแล้ว (สูงสุด)</div><div class="value corr-value">${maxCorrectedDist} dB(A)</div></div>
+</div>`;
+            }
+            
+            if(ldnValue !== null){
+                html+=`<div class="summary" style="grid-template-columns:1fr"><div class="s-card corr"><div class="label">Ldn (Day-Night Average)</div><div class="value corr-value">${ldnValue} dB(A)</div></div></div>`;
+            }
+            
+            html+=`<h2>ตารางผลการวิเคราะห์</h2>
+<table><thead><tr><th>#</th><th>วันที่</th><th>เวลา</th><th>Leq</th><th>Background</th><th>เสียงรบกวน</th><th>%สูงกว่า BG</th><th>ระดับ</th>${hasCorrections?'<th>แก้ไขแล้ว</th><th>ระดับ(แก้ไข)</th>':''}</tr></thead><tbody>`;
             analysisData.forEach((d,i)=>{
-                html+=`<tr><td>${i+1}</td><td>${d.date}</td><td>${d.time}</td><td><strong>${d.leq}</strong></td><td>${d.bg}</td><td class="${d.disturbance>10?'crit':d.disturbance>5?'warn':'safe'}"><strong>${d.disturbance}</strong></td><td>${d.pctAbove}%</td><td><span class="badge ${d.level.cls}">${d.level.label}</span></td></tr>`;
+                html+=`<tr><td>${i+1}</td><td>${d.date}</td><td>${d.time}</td><td><strong>${d.leq}</strong></td><td>${d.bg}</td><td class="${d.disturbance>10?'crit':d.disturbance>5?'warn':'safe'}"><strong>${d.disturbance}</strong></td><td>${d.pctAbove}%</td><td><span class="badge ${d.level.cls}">${d.level.label}</span></td>`;
+                if(hasCorrections){
+                    const corrLevel = getLevel(d.correctedDisturbance, alertLevel);
+                    html+=`<td class="corr-value"><strong>${d.correctedDisturbance}</strong></td><td><span class="badge ${corrLevel.cls}">${corrLevel.label}</span></td>`;
+                }
+                html+=`</tr>`;
             });
             html+=`</tbody></table><p style="margin-top:2rem;font-size:0.75rem;color:#888">รายงานนี้สร้างโดย Sound Monitor Dashboard — ${new Date().toLocaleDateString('th-TH')}</p></body></html>`;
             const blob=new Blob([html],{type:'text/html'});
