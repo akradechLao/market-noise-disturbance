@@ -421,11 +421,8 @@
         }
 
         function getLevel(dist,alertLvl){
-            if(dist<=3)return{label:'ปลอดภัย',cls:'badge-safe'};
-            if(dist<=6)return{label:'เล็กน้อย',cls:'badge-safe'};
-            if(dist<=alertLvl)return{label:'ปานกลาง',cls:'badge-warn'};
-            if(dist<=15)return{label:'ค่อนข้างสูง',cls:'badge-high'};
-            return{label:'สูง',cls:'badge-crit'};
+            if(dist<=10)return{label:'ไม่เป็นเสียงรบกวน',cls:'badge-safe'};
+            return{label:'เป็นเสียงรบกวน',cls:'badge-crit'};
         }
 
         window.runAnalysis=function(){

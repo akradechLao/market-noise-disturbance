@@ -485,30 +485,25 @@
                     <div class="chart-header">
                         <div>
                             <div class="chart-title">เกณฑ์จำแนกระดับเสียงรบกวน</div>
-                            <div class="chart-subtitle">มาตรฐานอ้างอิงจากการแพร่เสียง</div>
+                            <div class="chart-subtitle">ตามประกาศคณะกรรมการควบคุมมลพิษ พ.ศ. 2565</div>
                         </div>
                     </div>
                     <table class="class-table">
                         <thead>
-                            <tr><th>ช่วงค่า (dB)</th><th>ระดับ</th><th>ผลกระทบ</th></tr>
+                            <tr><th>ช่วงค่า (dB)</th><th>ผลสรุป</th><th>อ้างอิง</th></tr>
                         </thead>
                         <tbody>
-                            <tr><td><span class="class-dot" style="background:var(--green)"></span>0 - 3 dB</td><td>แทบไม่มี</td><td>กิจกรรมไม่กระทบสิ่งแวดล้อม</td></tr>
-                            <tr><td><span class="class-dot" style="background:var(--cyan)"></span>3 - 6 dB</td><td>เล็กน้อย</td><td>เสียงสังเกตได้เล็กน้อย</td></tr>
-                            <tr><td><span class="class-dot" style="background:var(--yellow)"></span>6 - 10 dB</td><td>ปานกลาง</td><td>ได้ยินชัดเจน กระทบผู้อยู่ใกล้</td></tr>
-                            <tr><td><span class="class-dot" style="background:var(--orange)"></span>10 - 15 dB</td><td>ค่อนข้างสูง</td><td>รบกวนการสนทนา</td></tr>
-                            <tr><td><span class="class-dot" style="background:var(--red)"></span>15 - 20 dB</td><td>สูง</td><td>รบกวนชีวิตประจำวัน</td></tr>
-                            <tr><td><span class="class-dot" style="background:#dc2626"></span>> 20 dB</td><td>วิกฤต</td><td>กระทบสุขภาพ ต้องแก้ไข</td></tr>
+                            <tr><td><span class="class-dot" style="background:var(--green)"></span>≤ 10 dB</td><td>ไม่เป็นเสียงรบกวน</td><td>ประกาศ กมล. พ.ศ. 2565</td></tr>
+                            <tr><td><span class="class-dot" style="background:var(--red)"></span>> 10 dB</td><td>เป็นเสียงรบกวน</td><td>ประกาศ กมล. พ.ศ. 2565</td></tr>
                         </tbody>
                     </table>
 
                     <div class="disturbance-scale">
-                        <div class="d-scale-seg" style="background:#22c55e">0-3<br>ไม่มี</div>
-                        <div class="d-scale-seg" style="background:#06b6d4">3-6<br>เล็กน้อย</div>
-                        <div class="d-scale-seg" style="background:#eab308">6-10<br>ปานกลาง</div>
-                        <div class="d-scale-seg" style="background:#f97316">10-15<br>ค่อนข้างสูง</div>
-                        <div class="d-scale-seg" style="background:#ef4444">15-20<br>สูง</div>
-                        <div class="d-scale-seg" style="background:#dc2626">>20<br>วิกฤต</div>
+                        <div class="d-scale-seg" style="background:#22c55e">≤ 10 dB<br>ไม่เป็นรบกวน</div>
+                        <div class="d-scale-seg" style="background:#ef4444">> 10 dB<br>เป็นรบกวน</div>
+                    </div>
+                    <div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.5rem">
+                        อ้างอิง: ประกาศคณะกรรมการควบคุมมลพิษ เรื่อง วิธีการตรวจวัดระดับเสียงพื้นฐาน ระดับเสียงขณะไม่มีการรบกวน การตรวจวัดและคานวณระดับเสียงขณะมีการรบกวน การคานวณค่าระดับการรบกวน และแบบบันทึกการตรวจวัดเสียงรบกวน พ.ศ. ๒๕๖๕ ข้อ ๖
                     </div>
                 </div>
 
@@ -627,12 +622,8 @@
         }
 
         function getDistLevel(d){
-            if(d<=3) return {label:'แทบไม่มี',cls:'val-safe',color:'var(--green)'};
-            if(d<=6) return {label:'เล็กน้อย',cls:'val-low',color:'var(--cyan)'};
-            if(d<=10) return {label:'ปานกลาง',cls:'val-mid',color:'var(--yellow)'};
-            if(d<=15) return {label:'ค่อนข้างสูง',cls:'val-high',color:'var(--orange)'};
-            if(d<=20) return {label:'สูง',cls:'val-crit',color:'var(--red)'};
-            return {label:'วิกฤต',cls:'val-crit',color:'#dc2626'};
+            if(d<=10) return {label:'ไม่เป็นเสียงรบกวน',cls:'val-safe',color:'var(--green)'};
+            return {label:'เป็นเสียงรบกวน',cls:'val-crit',color:'var(--red)'};
         }
 
         function generateTodayData(){
