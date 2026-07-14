@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analysis Report - ตลาด Bigfood แหลมฉบัง</title>
+    <script>
+        // Set theme immediately before render to prevent flash
+        (function(){
+            var t=localStorage.getItem('theme')||'dark';
+            document.documentElement.setAttribute('data-theme',t);
+        })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -112,7 +119,7 @@
                     <a href="noise-disturbance.html" class="nav-tab">Real-time</a>
                     <a href="analysis.html" class="nav-tab active">วิเคราะห์ & รายงาน</a>
                 </nav>
-                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+                <button class="theme-toggle" id="themeToggle" title="เปลี่ยนธีม">🌙</button>
             </div>
         </div>
     </header>
@@ -320,23 +327,21 @@
     </main>
 
     <script>
-        // Theme (must be outside IIFE for onclick to work)
+        // Theme
         const savedTheme=localStorage.getItem('theme')||'dark';
         document.documentElement.setAttribute('data-theme',savedTheme);
+        document.getElementById('themeToggle').textContent=savedTheme==='light'?'🌙':'☀️';
 
-        function toggleTheme(){
+        document.getElementById('themeToggle').addEventListener('click',function(){
             const cur=document.documentElement.getAttribute('data-theme');
             const next=cur==='light'?'dark':'light';
             document.documentElement.setAttribute('data-theme',next);
             localStorage.setItem('theme',next);
-            document.getElementById('themeToggle').textContent=next==='light'?'🌙':'☀️';
-            setTimeout(()=>{
-                if(typeof window._rerenderCharts==='function'){
-                    window._rerenderCharts();
-                }
-            },100);
-        }
-        document.getElementById('themeToggle').textContent=savedTheme==='light'?'🌙':'☀️';
+            this.textContent=next==='light'?'🌙':'☀️';
+            if(typeof window._rerenderCharts==='function'){
+                setTimeout(window._rerenderCharts,100);
+            }
+        });
 
         function $(id){return document.getElementById(id)}
 

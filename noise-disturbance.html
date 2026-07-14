@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Noise Disturbance Analysis - ตลาด Bigfood แหลมฉบัง</title>
+    <script>
+        (function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -800,8 +803,8 @@
                             callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+' dB(A)'}}
                     },
                     scales:{
-                        x:{grid:{color:'var(--chart-grid)'},ticks:{color:'var(--chart-tick)',maxTicksLimit:20,font:{size:10}}},
-                        y:{min:0,max:100,grid:{color:'var(--chart-grid)'},ticks:{color:'var(--chart-tick)',font:{size:10},callback:v=>v+' dB'}}
+                        x:{grid:{color:getCSS('--chart-grid')},ticks:{color:getCSS('--chart-tick'),maxTicksLimit:20,font:{size:10}}},
+                        y:{min:0,max:100,grid:{color:getCSS('--chart-grid')},ticks:{color:getCSS('--chart-tick'),font:{size:10},callback:v=>v+' dB'}}
                     }
                 }
             });
@@ -851,8 +854,8 @@
                         }
                     },
                     scales:{
-                        x:{grid:{display:false},ticks:{color:'var(--chart-tick)',font:{size:9},maxRotation:45}},
-                        y:{min:0,max:Math.max(30,...avgDist)+5,grid:{color:'var(--chart-grid)'},ticks:{color:'var(--chart-tick)',font:{size:10},callback:v=>v+' dB'}}
+                        x:{grid:{display:false},ticks:{color:getCSS('--chart-tick'),font:{size:9},maxRotation:45}},
+                        y:{min:0,max:Math.max(30,...avgDist)+5,grid:{color:getCSS('--chart-grid')},ticks:{color:getCSS('--chart-tick'),font:{size:10},callback:v=>v+' dB'}}
                     }
                 }
             });

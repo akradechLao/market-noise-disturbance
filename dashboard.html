@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sound Monitor Dashboard - ตลาด Bigfood แหลมฉบัง</title>
+    <script>
+        (function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -876,6 +879,7 @@
 
         // --- DOM Helpers ---
         function $(id) { return document.getElementById(id); }
+        function getCSS(varName){return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();}
         function getClass(val) {
             if (val <= SURVEILLANCE_VALUE) return 'value-safe';
             if (val <= SURVEILLANCE_VALUE + 10) return 'value-warning';
@@ -1013,14 +1017,14 @@
                                     type: 'line',
                                     yMin: SURVEILLANCE_VALUE,
                                     yMax: SURVEILLANCE_VALUE,
-                                    borderColor: 'var(--yellow)',
+                                    borderColor: getCSS('--yellow'),
                                     borderWidth: 2,
                                     borderDash: [6, 4],
                                     label: {
                                         content: 'ค่าเฝ้าระวัง ' + SURVEILLANCE_VALUE + ' dB',
                                         enabled: true,
                                         position: 'start',
-                                        backgroundColor: 'var(--yellow)',
+                                        backgroundColor: getCSS('--yellow'),
                                         color: '#000',
                                         font: { size: 10, weight: '600' },
                                         padding: 4
@@ -1029,11 +1033,11 @@
                             }
                         },
                         tooltip: {
-                            backgroundColor: 'var(--tooltip-bg)',
-                            borderColor: 'var(--tooltip-border)',
+                            backgroundColor: getCSS('--tooltip-bg'),
+                            borderColor: getCSS('--tooltip-border'),
                             borderWidth: 1,
-                            titleColor: 'var(--text-primary)',
-                            bodyColor: 'var(--text-secondary)',
+                            titleColor: getCSS('--text-primary'),
+                            bodyColor: getCSS('--text-secondary'),
                             padding: 10,
                             callbacks: {
                                 label: function(ctx) {
@@ -1044,15 +1048,15 @@
                     },
                     scales: {
                         x: {
-                            grid: { color: 'var(--chart-grid)' },
-                            ticks: { color: 'var(--chart-tick)', maxTicksLimit: 20, font: { size: 10 } }
+                            grid: { color: getCSS('--chart-grid') },
+                            ticks: { color: getCSS('--chart-tick'), maxTicksLimit: 20, font: { size: 10 } }
                         },
                         y: {
                             min: 15,
                             max: 100,
-                            grid: { color: 'var(--chart-grid)' },
+                            grid: { color: getCSS('--chart-grid') },
                             ticks: {
-                                color: 'var(--chart-tick)',
+                                color: getCSS('--chart-tick'),
                                 font: { size: 10 },
                                 callback: v => v + ' dB'
                             }
@@ -1084,7 +1088,7 @@
                     datasets: [{
                         data: counts,
                         backgroundColor: ranges.map(r => r.color),
-                        borderColor: 'var(--bg-card)',
+                        borderColor: getCSS('--bg-card'),
                         borderWidth: 2
                     }]
                 },
@@ -1095,11 +1099,11 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: 'var(--tooltip-bg)',
-                            borderColor: 'var(--tooltip-border)',
+                            backgroundColor: getCSS('--tooltip-bg'),
+                            borderColor: getCSS('--tooltip-border'),
                             borderWidth: 1,
-                            titleColor: 'var(--text-primary)',
-                            bodyColor: 'var(--text-secondary)',
+                            titleColor: getCSS('--text-primary'),
+                            bodyColor: getCSS('--text-secondary'),
                             callbacks: {
                                 label: function(ctx) {
                                     const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
