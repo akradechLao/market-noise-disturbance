@@ -171,7 +171,7 @@
                     <button class="nav-tab active-orange">วิเคราะห์เสียงรบกวน</button>
                 </nav>
                 <div class="status-badge status-online"><span class="status-dot"></span><span>Real-time</span></div>
-                <div class="refresh-info">อัปเดตทุก 5 วินาที</div>
+                <div class="refresh-info">อัปเดตทุก 1 นาที</div>
             </div>
         </div>
     </header>
@@ -605,11 +605,11 @@
 
         setTimeout(()=>{loadData('today');$('loader').classList.add('hidden');showNotification('โหลดข้อมูลสำเร็จ — แสดงข้อมูลตัวอย่าง')},800);
 
-        // Real-time update every 5 seconds
+        // Real-time update every 1 minute
         setInterval(()=>{
             loadData(currentRange);
             showNotification('อัปเดต '+new Date().toLocaleTimeString('th-TH'));
-        },5000);
+        },60000);
 
         function showNotification(text){$('notifText').textContent=text;$('notification').classList.add('show');setTimeout(()=>$('notification').classList.remove('show'),2500)}
     })();
