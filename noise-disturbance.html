@@ -984,15 +984,16 @@
 
         // Theme switching
         function toggleTheme(){
-            const html=document.documentElement;
-            const current=html.getAttribute('data-theme');
-            const next=current==='light'?'dark':'light';
+            var html=document.documentElement;
+            var current=html.getAttribute('data-theme');
+            var next=current==='light'?'dark':'light';
             html.setAttribute('data-theme',next);
             localStorage.setItem('theme',next);
             $('themeToggle').textContent=next==='light'?'🌙':'☀️';
             // Update chart colors for theme
-            setTimeout(()=>{if(lastDataCache.length){updateDisturbanceChart(lastDataCache);updateHourlyChart(lastDataCache);}},100);
+            setTimeout(function(){if(lastDataCache.length){updateDisturbanceChart(lastDataCache);updateHourlyChart(lastDataCache);}},100);
         }
+        window.toggleTheme=toggleTheme;
         // Load saved theme
         const savedTheme=localStorage.getItem('theme')||'dark';
         document.documentElement.setAttribute('data-theme',savedTheme);

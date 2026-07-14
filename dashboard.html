@@ -1180,14 +1180,15 @@
 
         // Theme switching
         function toggleTheme(){
-            const html=document.documentElement;
-            const current=html.getAttribute('data-theme');
-            const next=current==='light'?'dark':'light';
+            var html=document.documentElement;
+            var current=html.getAttribute('data-theme');
+            var next=current==='light'?'dark':'light';
             html.setAttribute('data-theme',next);
             localStorage.setItem('theme',next);
             $('themeToggle').textContent=next==='light'?'🌙':'☀️';
-            setTimeout(()=>{loadData(currentRange);},100);
+            setTimeout(function(){loadData(currentRange);},100);
         }
+        window.toggleTheme=toggleTheme;
         const savedTheme=localStorage.getItem('theme')||'dark';
         document.documentElement.setAttribute('data-theme',savedTheme);
         $('themeToggle').textContent=savedTheme==='light'?'🌙':'☀️';
