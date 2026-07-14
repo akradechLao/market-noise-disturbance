@@ -793,7 +793,10 @@
                             <div class="chart-subtitle">สัดส่วนค่าเสียงในแต่ละช่วง</div>
                         </div>
                     </div>
-                    <canvas id="distributionChart" height="140"></canvas>
+                    <div style="display:flex;gap:1rem;align-items:center">
+                        <div style="flex:0 0 120px"><canvas id="distributionChart" height="120"></canvas></div>
+                        <div id="distDetails" style="flex:1;font-size:0.7rem;display:flex;flex-direction:column;gap:0.4rem"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1060,43 +1063,36 @@
 
         function updateDistributionChart(data) {
             const ranges = [
-                { label: '< 30', min: 0, max: 30, color: '#22c55e' },
-                { label: '30-40', min: 30, max: 40, color: '#86efac' },
-                { label: '40-50', min: 40, max: 50, color: '#facc15' },
-                { label: '50-55', min: 50, max: 55, color: '#f97316' },
-                { label: '55-70', min: 55, max: 70, color: '#ef4444' },
-                { label: '> 70', min: 70, max: 200, color: '#dc2626' }
+                { label: '< 30 dB', min: 0, max: 30, color: '#22c55e' },
+                { label: '30-40 dB', min: 30, max: 40, color: '#86efac' },
+                { label: '40-50 dB', min: 40, max: 50, color: '#facc15' },
+                { label: '50-55 dB', min: 50, max: 55, color: '#f97316' },
+                { label: '55-70 dB', min: 55, max: 70, color: '#ef4444' },
+                { label: '> 70 dB', min: 70, max: 200, color: '#dc2626' }
             ];
 
             const counts = ranges.map(r => data.filter(d => d.leq >= r.min && d.leq < r.max).length);
+            const total = counts.reduce((a, b) => a + b, 0);
 
             if (distributionChart) distributionChart.destroy();
 
             distributionChart = new Chart($('distributionChart'), {
                 type: 'doughnut',
                 data: {
-                    labels: ranges.map(r => r.label + ' dB'),
+                    labels: ranges.map(r => r.label),
                     datasets: [{
                         data: counts,
                         backgroundColor: ranges.map(r => r.color),
-                        borderColor: '#1e293b',
-                        borderWidth: 3
+                        borderColor: 'var(--bg-card)',
+                        borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
-                    cutout: '60%',
+                    maintainAspectRatio: true,
+                    cutout: '55%',
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: 'var(--text-secondary)',
-                                font: { size: 10 },
-                                padding: 8,
-                                usePointStyle: true,
-                                pointStyleWidth: 8
-                            }
-                        },
+                        legend: { display: false },
                         tooltip: {
                             backgroundColor: 'var(--tooltip-bg)',
                             borderColor: 'var(--tooltip-border)',
@@ -1105,7 +1101,6 @@
                             bodyColor: 'var(--text-secondary)',
                             callbacks: {
                                 label: function(ctx) {
-                                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
                                     const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
                                     return ctx.label + ': ' + ctx.parsed + ' ครั้ง (' + pct + '%)';
                                 }
@@ -1114,6 +1109,21 @@
                     }
                 }
             });
+
+            // Render detail rows
+            const detailsHtml = ranges.map((r, i) => {
+                const pct = total > 0 ? ((counts[i] / total) * 100).toFixed(1) : 0;
+                return `<div style="display:flex;align-items:center;gap:0.5rem">
+                    <span style="width:10px;height:10px;border-radius:3px;background:${r.color};flex-shrink:0"></span>
+                    <span style="color:var(--text-secondary);min-width:60px">${r.label}</span>
+                    <div style="flex:1;height:6px;background:var(--card-bg-alt);border-radius:3px;overflow:hidden">
+                        <div style="width:${pct}%;height:100%;background:${r.color};border-radius:3px;transition:width 0.5s"></div>
+                    </div>
+                    <span style="color:var(--text-primary);font-weight:600;min-width:32px;text-align:right">${counts[i]}</span>
+                    <span style="color:var(--text-muted);min-width:36px;text-align:right">${pct}%</span>
+                </div>`;
+            }).join('');
+            $('distDetails').innerHTML = detailsHtml;
         }
 
         // --- Time range ---
