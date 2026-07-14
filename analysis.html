@@ -308,6 +308,9 @@
         function $(id){return document.getElementById(id)}
         function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 
+        // Get actual computed CSS variable value for Chart.js
+        function getCSS(varName){return getComputedStyle(document.documentElement).getPropertyValue(varName).trim()}
+
         let bgMode='auto';
         let analysisData=[];
         let bgNoiseValue=35;
@@ -544,11 +547,11 @@
                     responsive:true,maintainAspectRatio:true,interaction:{mode:'index',intersect:false},
                     plugins:{legend:{display:false},
                         annotation:{annotations:{
-                            thresh:{type:'line',yMin:threshold,yMax:threshold,borderColor:'var(--yellow)',borderWidth:2,borderDash:[6,4],label:{content:'ค่าเฝ้าระวัง '+threshold+' dB',enabled:true,position:'start',backgroundColor:'var(--yellow)',color:'#000',font:{size:9,weight:'600'},padding:3}}
+                            thresh:{type:'line',yMin:threshold,yMax:threshold,borderColor:getCSS('--yellow'),borderWidth:2,borderDash:[6,4],label:{content:'ค่าเฝ้าระวัง '+threshold+' dB',enabled:true,position:'start',backgroundColor:getCSS('--yellow'),color:'#000',font:{size:9,weight:'600'},padding:3}}
                         }},
-                        tooltip:{backgroundColor:'var(--tooltip-bg)',borderColor:'var(--tooltip-border)',borderWidth:1,titleColor:'var(--t1)',bodyColor:'var(--t2)',callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+' dB(A)'}}
+                        tooltip:{backgroundColor:getCSS('--tooltip-bg'),borderColor:getCSS('--tooltip-border'),borderWidth:1,titleColor:getCSS('--t1'),bodyColor:getCSS('--t2'),titleFont:{weight:'600'},bodyFont:{size:12},callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+' dB(A)'}}
                     },
-                    scales:{x:{display:false},y:{min:0,max:Math.max(100,...data.map(d=>d.leq))+5,grid:{color:'var(--grid)'},ticks:{color:'var(--tick)',callback:v=>v+' dB'}}}
+                    scales:{x:{display:false},y:{min:0,max:Math.max(100,...data.map(d=>d.leq))+5,grid:{color:getCSS('--grid')},ticks:{color:getCSS('--tick'),callback:v=>v+' dB'}}}
                 }
             });
         }
@@ -563,13 +566,13 @@
             
             if(hasCorrections){
                 const correctedCounts=levels.map(l=>data.filter(d=>d.correctedDisturbance>=l.min&&d.correctedDisturbance<l.max).length);
-                datasets.push({data:correctedCounts,backgroundColor:levels.map(l=>l.c+'99'),borderColor:'var(--card)',borderWidth:2,borderDash:[3,3]});
+                datasets.push({data:correctedCounts,backgroundColor:levels.map(l=>l.c+'99'),borderColor:getCSS('--card'),borderWidth:2,borderDash:[3,3]});
             }
 
             statCh=new Chart($('statChart'),{
                 type:'doughnut',
                 data:{labels:levels.map(l=>l.l),datasets:datasets},
-                options:{responsive:true,maintainAspectRatio:true,cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:'var(--t2)',font:{size:9},padding:6,usePointStyle:true}},tooltip:{callbacks:{label:ctx=>{const t=counts.reduce((a,b)=>a+b,0);return ctx.label+': '+ctx.parsed+' จุด ('+((ctx.parsed/t)*100).toFixed(1)+'%)'}}}}}
+                options:{responsive:true,maintainAspectRatio:true,cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:getCSS('--t2'),font:{size:9},padding:6,usePointStyle:true}},tooltip:{backgroundColor:getCSS('--tooltip-bg'),borderColor:getCSS('--tooltip-border'),titleColor:getCSS('--t1'),bodyColor:getCSS('--t2'),callbacks:{label:ctx=>{const t=counts.reduce((a,b)=>a+b,0);return ctx.label+': '+ctx.parsed+' จุด ('+((ctx.parsed/t)*100).toFixed(1)+'%)'}}}}}
             });
         }
 
@@ -596,10 +599,10 @@
                 options:{
                     responsive:true,maintainAspectRatio:true,
                     plugins:{legend:{display:false},
-                        annotation:{annotations:{thresh:{type:'line',yMin:threshold,yMax:threshold,borderColor:'var(--yellow)',borderWidth:2,borderDash:[4,4]}}},
-                        tooltip:{callbacks:{label:ctx=>'Leq: '+ctx.parsed.y+' dB(A) (เกิน '+(ctx.parsed.y-threshold).toFixed(1)+' dB)'}}
+                        annotation:{annotations:{thresh:{type:'line',yMin:threshold,yMax:threshold,borderColor:getCSS('--yellow'),borderWidth:2,borderDash:[4,4]}}},
+                        tooltip:{backgroundColor:getCSS('--tooltip-bg'),borderColor:getCSS('--tooltip-border'),titleColor:getCSS('--t1'),bodyColor:getCSS('--t2'),callbacks:{label:ctx=>'Leq: '+ctx.parsed.y+' dB(A) (เกิน '+(ctx.parsed.y-threshold).toFixed(1)+' dB)'}}
                     },
-                    scales:{x:{grid:{display:false},ticks:{color:'var(--tick)',font:{size:8},maxRotation:60}},y:{min:threshold-5,grid:{color:'var(--grid)'},ticks:{color:'var(--tick)',callback:v=>v+' dB'}}}
+                    scales:{x:{grid:{display:false},ticks:{color:getCSS('--tick'),font:{size:8},maxRotation:60}},y:{min:threshold-5,grid:{color:getCSS('--grid')},ticks:{color:getCSS('--tick'),callback:v=>v+' dB'}}}
                 }
             });
         }

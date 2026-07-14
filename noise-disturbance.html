@@ -565,6 +565,9 @@
         function $(id){return document.getElementById(id)}
         function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 
+        // Get actual computed CSS variable value for Chart.js
+        function getCSS(varName){return getComputedStyle(document.documentElement).getPropertyValue(varName).trim()}
+
         // Thai Legal Correction Factors
         let correctionEnabled = {
             time: true,
@@ -775,11 +778,12 @@
                         legend:{display:false},
                         annotation:{
                             annotations:{
-                                thresh:{type:'line',yMin:SURVEILLANCE,yMax:SURVEILLANCE,borderColor:'var(--yellow)',borderWidth:2,borderDash:[6,4],
-                                    label:{content:'ค่าเฝ้าระวัง '+SURVEILLANCE+' dB',enabled:true,position:'start',backgroundColor:'var(--yellow)',color:'#000',font:{size:9,weight:'600'},padding:3}}
+                                thresh:{type:'line',yMin:SURVEILLANCE,yMax:SURVEILLANCE,borderColor:getCSS('--yellow'),borderWidth:2,borderDash:[6,4],
+                                    label:{content:'ค่าเฝ้าระวัง '+SURVEILLANCE+' dB',enabled:true,position:'start',backgroundColor:getCSS('--yellow'),color:'#000',font:{size:9,weight:'600'},padding:3}}
                             }
                         },
-                        tooltip:{backgroundColor:'var(--tooltip-bg)',borderColor:'var(--tooltip-border)',borderWidth:1,titleColor:'var(--text-primary)',bodyColor:'var(--text-secondary)',padding:10,
+                        tooltip:{backgroundColor:getCSS('--tooltip-bg'),borderColor:getCSS('--tooltip-border'),borderWidth:1,titleColor:getCSS('--text-primary'),bodyColor:getCSS('--text-secondary'),padding:10,
+                            titleFont:{weight:'600'},bodyFont:{size:12},
                             callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+' dB(A)'}}
                     },
                     scales:{
@@ -820,16 +824,16 @@
                     responsive:true,maintainAspectRatio:true,
                     plugins:{
                         legend:{display:false},
-                        tooltip:{backgroundColor:'var(--tooltip-bg)',borderColor:'var(--tooltip-border)',borderWidth:1,titleColor:'var(--text-primary)',bodyColor:'var(--text-secondary)',
+                        tooltip:{backgroundColor:getCSS('--tooltip-bg'),borderColor:getCSS('--tooltip-border'),borderWidth:1,titleColor:getCSS('--text-primary'),bodyColor:getCSS('--text-secondary'),
                             callbacks:{label:ctx=>'เสียงรบกวน: '+ctx.parsed.y+' dB(A)'}},
                         annotation:{
                             annotations:{
-                                zeroLine:{type:'line',yMin:0,yMax:0,borderColor:'var(--chart-grid)',borderWidth:1},
+                                zeroLine:{type:'line',yMin:0,yMax:0,borderColor:getCSS('--chart-grid'),borderWidth:1},
                                 avgLine:{type:'line',
                                     yMin:avgDist.reduce((a,b)=>a+b,0)/avgDist.filter(v=>v>0).length,
                                     yMax:avgDist.reduce((a,b)=>a+b,0)/avgDist.filter(v=>v>0).length,
-                                    borderColor:'var(--orange)',borderWidth:1.5,borderDash:[4,4],
-                                    label:{content:'ค่าเฉลี่ย',enabled:true,position:'end',backgroundColor:'var(--orange)',color:'#fff',font:{size:9},padding:2}}
+                                    borderColor:getCSS('--orange'),borderWidth:1.5,borderDash:[4,4],
+                                    label:{content:'ค่าเฉลี่ย',enabled:true,position:'end',backgroundColor:getCSS('--orange'),color:'#fff',font:{size:9},padding:2}}
                             }
                         }
                     },
