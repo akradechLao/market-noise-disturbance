@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noise Disturbance Analysis - ตลาด Bigfood แหลมฉบัง</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #1e293b;
+            --border: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #3b82f6;
+            --green: #22c55e;
+            --green-bg: rgba(34,197,94,0.1);
+            --yellow: #eab308;
+            --yellow-bg: rgba(234,179,8,0.1);
+            --red: #ef4444;
+            --red-bg: rgba(239,68,68,0.1);
+            --orange: #f97316;
+            --orange-bg: rgba(249,115,22,0.1);
+            --purple: #a855f7;
+            --cyan: #06b6d4;
+            --teal: #14b8a6;
+            --pink: #ec4899;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4);
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh}
+
+        /* --- Header --- */
+        .header{background:linear-gradient(135deg,#1e293b,#0f172a);border-bottom:1px solid var(--border);padding:1rem 2rem;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
+        .header-inner{max-width:1600px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+        .header-left{display:flex;align-items:center;gap:1rem}
+        .logo{width:40px;height:40px;background:linear-gradient(135deg,var(--orange),var(--pink));border-radius:10px;display:flex;align-items:center;justify-content:center}
+        .header-title h1{font-size:1.1rem;font-weight:700;letter-spacing:-0.02em}
+        .header-title p{font-size:0.75rem;color:var(--text-secondary)}
+        .header-right{display:flex;align-items:center;gap:1rem}
+        .status-badge{display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0.8rem;border-radius:9999px;font-size:0.75rem;font-weight:500}
+        .status-online{background:var(--green-bg);color:var(--green);border:1px solid rgba(34,197,94,0.3)}
+        .status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+        .refresh-info{font-size:0.75rem;color:var(--text-muted)}
+        .nav-tabs{display:flex;gap:0.25rem;background:rgba(255,255,255,0.03);border-radius:10px;padding:3px}
+        .nav-tab{padding:0.5rem 1rem;border-radius:8px;border:none;background:transparent;color:var(--text-secondary);font-size:0.75rem;font-weight:500;cursor:pointer;transition:all 0.2s;font-family:inherit}
+        .nav-tab:hover{color:var(--text-primary)}
+        .nav-tab.active{background:var(--accent);color:white}
+        .nav-tab.active-orange{background:var(--orange);color:white}
+
+        .main{max-width:1600px;margin:0 auto;padding:1.5rem 2rem}
+
+        /* --- Stats Grid --- */
+        .stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.5rem}
+        .stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:1.25rem;transition:all 0.2s;position:relative;overflow:hidden}
+        .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+        .stat-card.bg-noise::before{background:linear-gradient(90deg,var(--green),#86efac)}
+        .stat-card.current-leq::before{background:linear-gradient(90deg,var(--accent),var(--cyan))}
+        .stat-card.disturbance::before{background:linear-gradient(90deg,var(--orange),#fdba74)}
+        .stat-card.disturbance-pct::before{background:linear-gradient(90deg,var(--red),#fca5a5)}
+        .stat-card.energy::before{background:linear-gradient(90deg,var(--purple),#c084fc)}
+        .stat-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+        .stat-label{font-size:0.7rem;color:var(--text-secondary);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem}
+        .stat-value{font-size:1.8rem;font-weight:800;letter-spacing:-0.03em;line-height:1}
+        .stat-unit{font-size:0.8rem;font-weight:500;color:var(--text-secondary);margin-left:0.25rem}
+        .stat-sub{font-size:0.65rem;color:var(--text-muted);margin-top:0.4rem}
+        .stat-bar{margin-top:0.6rem;height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden}
+        .stat-bar-fill{height:100%;border-radius:2px;transition:width 0.8s ease}
+
+        /* --- Charts Grid --- */
+        .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+        .chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:1.25rem}
+        .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem}
+        .chart-title{font-size:0.9rem;font-weight:600}
+        .chart-subtitle{font-size:0.7rem;color:var(--text-muted)}
+        .chart-legend{display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem}
+        .legend-item{display:flex;align-items:center;gap:0.35rem;font-size:0.7rem;color:var(--text-secondary)}
+        .legend-dot{width:8px;height:8px;border-radius:50%}
+
+        /* --- Bottom Grid --- */
+        .bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+        .table-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:1.25rem;overflow:hidden}
+        .table-wrapper{overflow-x:auto;max-height:420px;overflow-y:auto}
+        table{width:100%;border-collapse:collapse;font-size:0.75rem}
+        thead{position:sticky;top:0;z-index:10}
+        th{background:var(--bg-primary);color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;padding:0.6rem 0.75rem;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+        td{padding:0.5rem 0.75rem;border-bottom:1px solid rgba(51,65,85,0.5);white-space:nowrap}
+        tr:hover td{background:rgba(249,115,22,0.05)}
+        .val-safe{color:var(--green)}.val-low{color:var(--cyan)}.val-mid{color:var(--yellow)}.val-high{color:var(--orange)}.val-crit{color:var(--red)}
+
+        .info-cards{display:flex;flex-direction:column;gap:0.75rem}
+        .info-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:1rem}
+        .info-card-title{font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem}
+        .info-card-value{font-size:1.1rem;font-weight:700}
+        .info-card-desc{font-size:0.65rem;color:var(--text-secondary);margin-top:0.25rem}
+
+        /* --- Disturbance Level Bar --- */
+        .disturbance-scale{display:flex;gap:3px;margin-top:0.75rem}
+        .d-scale-seg{flex:1;height:28px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:0.55rem;font-weight:600;color:rgba(0,0,0,0.8);line-height:1.1;transition:transform 0.2s}
+        .d-scale-seg:hover{transform:scaleY(1.2)}
+
+        /* --- Realtime indicator --- */
+        .realtime-bar{display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem;padding:0.75rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px}
+        .realtime-dot{width:10px;height:10px;border-radius:50%;background:var(--orange);animation:pulse 1.5s infinite}
+        .realtime-label{font-size:0.8rem;font-weight:600;color:var(--orange)}
+        .realtime-value{font-size:1.2rem;font-weight:800;margin-left:auto}
+        .realtime-sub{font-size:0.7rem;color:var(--text-muted);margin-left:0.5rem}
+
+        /* --- Formula Box --- */
+        .formula-box{background:rgba(249,115,22,0.05);border:1px solid rgba(249,115,22,0.2);border-radius:12px;padding:1rem;margin-bottom:1rem}
+        .formula-title{font-size:0.75rem;font-weight:600;color:var(--orange);margin-bottom:0.5rem}
+        .formula-text{font-size:0.85rem;font-family:'Courier New',monospace;color:var(--text-primary);background:rgba(0,0,0,0.2);padding:0.5rem 0.75rem;border-radius:8px;margin-bottom:0.5rem}
+        .formula-desc{font-size:0.65rem;color:var(--text-secondary);line-height:1.5}
+
+        /* --- Classification Table --- */
+        .class-table{width:100%;font-size:0.7rem;border-collapse:collapse}
+        .class-table th{background:rgba(255,255,255,0.03);padding:0.5rem;text-align:left;border-bottom:1px solid var(--border)}
+        .class-table td{padding:0.5rem;border-bottom:1px solid rgba(51,65,85,0.3)}
+        .class-dot{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:0.5rem;vertical-align:middle}
+
+        .time-range-selector{display:flex;gap:0.5rem;flex-wrap:wrap}
+        .time-btn{padding:0.35rem 0.75rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:0.7rem;font-weight:500;cursor:pointer;transition:all 0.2s;font-family:inherit}
+        .time-btn:hover{border-color:var(--orange);color:var(--text-primary)}
+        .time-btn.active{background:var(--orange);color:white;border-color:var(--orange)}
+
+        @media(max-width:1200px){.stats-grid{grid-template-columns:repeat(3,1fr)}.charts-grid,.bottom-grid{grid-template-columns:1fr}}
+        @media(max-width:640px){.stats-grid{grid-template-columns:1fr 1fr}.main{padding:1rem}.header{padding:0.75rem 1rem}}
+
+        .loading-overlay{position:fixed;inset:0;background:var(--bg-primary);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;transition:opacity 0.5s}
+        .loading-overlay.hidden{opacity:0;pointer-events:none}
+        .loader{width:50px;height:50px;border:3px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin 0.8s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .loading-text{margin-top:1rem;font-size:0.85rem;color:var(--text-secondary)}
+
+        .notification{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:0.75rem 1rem;font-size:0.75rem;color:var(--text-secondary);box-shadow:var(--shadow-lg);z-index:50;display:flex;align-items:center;gap:0.5rem;transform:translateY(100px);opacity:0;transition:all 0.3s}
+        .notification.show{transform:translateY(0);opacity:1}
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loader">
+        <div class="loader"></div>
+        <div class="loading-text">กำลังวิเคราะห์เสียงรบกวน...</div>
+    </div>
+
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-left">
+                <div class="logo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/>
+                        <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                </div>
+                <div class="header-title">
+                    <h1>Noise Disturbance Analysis</h1>
+                    <p>ตลาด Bigfood แหลมฉบัง — วิเคราะห์เสียงรบกวนจากกิจกรรมตลาด</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <nav class="nav-tabs">
+                    <a href="dashboard.html" class="nav-tab">Dashboard</a>
+                    <button class="nav-tab active-orange">วิเคราะห์เสียงรบกวน</button>
+                </nav>
+                <div class="status-badge status-online"><span class="status-dot"></span><span>Real-time</span></div>
+                <div class="refresh-info">อัปเดตทุก 5 วินาที</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- Formula -->
+        <div class="formula-box">
+            <div class="formula-title">หลักการคำนวณเสียงรบกวน (Noise Disturbance Calculation)</div>
+            <div class="formula-text">Noise Disturbance = Leq - L90 &nbsp;&nbsp;(หน่วย: dB(A))</div>
+            <div class="formula-desc">
+                <strong>L90</strong> = ค่าระดับเสียงที่มีเวลาสะสมมากกว่า 90% ของช่วงเวลาที่วัดได้ ใช้เป็นค่า <strong>เสียงพื้นหลัง (Background Noise)</strong><br>
+                <strong>Leq</strong> = ค่าระดับเสียงเฉลี่ยเทียบเท่า (Equivalent Continuous Sound Level)<br>
+                <strong>Leq - L90</strong> = ค่าเสียงที่ <strong>กิจกรรมตลาด</strong> เพิ่มขึ้นเหนือเสียงพื้นหลัง = <strong>ระดับเสียงรบกวน</strong>
+            </div>
+        </div>
+
+        <!-- Realtime Bar -->
+        <div class="realtime-bar">
+            <div class="realtime-dot"></div>
+            <div class="realtime-label">เสียงรบกวนขณะนี้</div>
+            <div class="realtime-value" id="rtDisturbance">-- dB(A)</div>
+            <div class="realtime-sub" id="rtDisturbanceClass">รอข้อมูล</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card bg-noise">
+                <div class="stat-label">L90 (Background Noise)</div>
+                <div class="stat-value" id="sL90">--<span class="stat-unit">dB(A)</span></div>
+                <div class="stat-sub">เสียงพื้นหลัง 90% เวลาเกินค่านี้</div>
+                <div class="stat-bar"><div class="stat-bar-fill" id="sL90Bar" style="width:0%;background:linear-gradient(90deg,var(--green),#86efac)"></div></div>
+            </div>
+            <div class="stat-card current-leq">
+                <div class="stat-label">Leq (Current)</div>
+                <div class="stat-value" id="sLeq">--<span class="stat-unit">dB(A)</span></div>
+                <div class="stat-sub">ค่าระดับเสียงเฉลี่ยเทียบเท่า</div>
+                <div class="stat-bar"><div class="stat-bar-fill" id="sLeqBar" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--cyan))"></div></div>
+            </div>
+            <div class="stat-card disturbance">
+                <div class="stat-label">Disturbance (Leq - L90)</div>
+                <div class="stat-value" id="sDist">--<span class="stat-unit">dB(A)</span></div>
+                <div class="stat-sub">ระดับเสียงรบกวนจากกิจกรรมตลาด</div>
+                <div class="stat-bar"><div class="stat-bar-fill" id="sDistBar" style="width:0%;background:linear-gradient(90deg,var(--orange),#fdba74)"></div></div>
+            </div>
+            <div class="stat-card disturbance-pct">
+                <div class="stat-label">% Disturbance Ratio</div>
+                <div class="stat-value" id="sDistPct">--<span class="stat-unit">%</span></div>
+                <div class="stat-sub">สัดส่วนเสียงรบกวนต่อเสียงทั้งหมด</div>
+                <div class="stat-bar"><div class="stat-bar-fill" id="sDistPctBar" style="width:0%;background:linear-gradient(90deg,var(--red),#fca5a5)"></div></div>
+            </div>
+            <div class="stat-card energy">
+                <div class="stat-label">Sound Energy Index</div>
+                <div class="stat-value" id="sEnergy">--<span class="stat-unit">W/m²</span></div>
+                <div class="stat-sub">ดัชนีพลังงานเสียง (10^(Leq/10))</div>
+                <div class="stat-bar"><div class="stat-bar-fill" id="sEnergyBar" style="width:0%;background:linear-gradient(90deg,var(--purple),#c084fc)"></div></div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <!-- Main Disturbance Chart -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">กราฟเสียงรบกวน Real-time (Leq - L90)</div>
+                        <div class="chart-subtitle">แสดงเสียงพื้นหลัง, ค่า Leq, และเสียงรบกวน</div>
+                    </div>
+                    <div class="time-range-selector">
+                        <button class="time-btn active" data-range="today">วันนี้</button>
+                        <button class="time-btn" data-range="3days">3 วัน</button>
+                        <button class="time-btn" data-range="7days">7 วัน</button>
+                    </div>
+                </div>
+                <div class="chart-legend">
+                    <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>L90 (เสียงพื้นหลัง)</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span>Leq</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:var(--orange)"></span>เสียงรบกวน (Leq-L90)</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:var(--yellow)"></span>ค่าเฝ้าระวัง 55 dB</span>
+                </div>
+                <canvas id="disturbanceChart" height="110"></canvas>
+            </div>
+
+            <!-- Disturbance by Hour -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">เสียงรบกวนเฉลี่ยรายชั่วโมง</div>
+                        <div class="chart-subtitle">Leq - L90 เฉลี่ยในแต่ละชั่วโมง</div>
+                    </div>
+                </div>
+                <canvas id="hourlyChart" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="bottom-grid">
+            <!-- Data Table -->
+            <div class="table-card">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">ตารางวิเคราะห์เสียงรบกวน (5 นาที)</div>
+                        <div class="chart-subtitle">ค่าเสียงรบกวน = Leq - L90</div>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>เวลา</th>
+                                <th>L90</th>
+                                <th>Leq</th>
+                                <th>เสียงรบกวน</th>
+                                <th>%Ratio</th>
+                                <th>ระดับ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="distTable">
+                            <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">กำลังโหลด...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div>
+                <!-- Classification -->
+                <div class="table-card" style="margin-bottom:1rem">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">เกณฑ์จำแนกระดับเสียงรบกวน</div>
+                            <div class="chart-subtitle">มาตรฐานอ้างอิงจากการแพร่เสียง</div>
+                        </div>
+                    </div>
+                    <table class="class-table">
+                        <thead>
+                            <tr><th>ช่วงค่า (dB)</th><th>ระดับ</th><th>ผลกระทบ</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="class-dot" style="background:var(--green)"></span>0 - 3 dB</td><td>แทบไม่มี</td><td>กิจกรรมไม่กระทบสิ่งแวดล้อม</td></tr>
+                            <tr><td><span class="class-dot" style="background:var(--cyan)"></span>3 - 6 dB</td><td>เล็กน้อย</td><td>เสียงสังเกตได้เล็กน้อย</td></tr>
+                            <tr><td><span class="class-dot" style="background:var(--yellow)"></span>6 - 10 dB</td><td>ปานกลาง</td><td>ได้ยินชัดเจน กระทบผู้อยู่ใกล้</td></tr>
+                            <tr><td><span class="class-dot" style="background:var(--orange)"></span>10 - 15 dB</td><td>ค่อนข้างสูง</td><td>รบกวนการสนทนา</td></tr>
+                            <tr><td><span class="class-dot" style="background:var(--red)"></span>15 - 20 dB</td><td>สูง</td><td>รบกวนชีวิตประจำวัน</td></tr>
+                            <tr><td><span class="class-dot" style="background:#dc2626"></span>> 20 dB</td><td>วิกฤต</td><td>กระทบสุขภาพ ต้องแก้ไข</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="disturbance-scale">
+                        <div class="d-scale-seg" style="background:#22c55e">0-3<br>ไม่มี</div>
+                        <div class="d-scale-seg" style="background:#06b6d4">3-6<br>เล็กน้อย</div>
+                        <div class="d-scale-seg" style="background:#eab308">6-10<br>ปานกลาง</div>
+                        <div class="d-scale-seg" style="background:#f97316">10-15<br>ค่อนข้างสูง</div>
+                        <div class="d-scale-seg" style="background:#ef4444">15-20<br>สูง</div>
+                        <div class="d-scale-seg" style="background:#dc2626">>20<br>วิกฤต</div>
+                    </div>
+                </div>
+
+                <!-- Daily Stats -->
+                <div class="table-card">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">สถิติเสียงรบกวนวันนี้</div>
+                            <div class="chart-subtitle">สรุปค่าการวิเคราะห์</div>
+                        </div>
+                    </div>
+                    <div class="info-cards">
+                        <div class="info-card">
+                            <div class="info-card-title">ค่าเสียงรบกวนเฉลี่ย (วันนี้)</div>
+                            <div class="info-card-value" id="avgDist">-- dB(A)</div>
+                            <div class="info-card-desc">Leq เฉลี่ย - L90 เฉลี่ย</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-title">เสียงรบกวนสูงสุด</div>
+                            <div class="info-card-value" id="maxDist" style="color:var(--red)">-- dB(A)</div>
+                            <div class="info-card-desc">ค่า Leq-L90 สูงสุดที่บันทึก</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-title">L90 เฉลี่ย (เสียงพื้นหลัง)</div>
+                            <div class="info-card-value" id="avgL90" style="color:var(--green)">-- dB(A)</div>
+                            <div class="info-card-desc">ค่าเสียงพื้นหลังเฉลี่ยทั้งวัน</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-title">เวลาที่มีเสียงรบกวนสูงสุด</div>
+                            <div class="info-card-value" id="peakHour" style="color:var(--orange)">--:--</div>
+                            <div class="info-card-desc">ช่วงเวลาที่กิจกรรมตลาดหนาแน่น</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="notification" id="notification">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        </svg>
+        <span id="notifText">ข้อมูลอัปเดตแล้ว</span>
+    </div>
+
+    <script>
+    (function(){
+        const SURVEILLANCE = 55;
+        let distChart = null, hourlyCh = null;
+
+        function $(id){return document.getElementById(id)}
+        function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+
+        function getDistLevel(d){
+            if(d<=3) return {label:'แทบไม่มี',cls:'val-safe',color:'var(--green)'};
+            if(d<=6) return {label:'เล็กน้อย',cls:'val-low',color:'var(--cyan)'};
+            if(d<=10) return {label:'ปานกลาง',cls:'val-mid',color:'var(--yellow)'};
+            if(d<=15) return {label:'ค่อนข้างสูง',cls:'val-high',color:'var(--orange)'};
+            if(d<=20) return {label:'สูง',cls:'val-crit',color:'var(--red)'};
+            return {label:'วิกฤต',cls:'val-crit',color:'#dc2626'};
+        }
+
+        function generateTodayData(){
+            const data=[], now=new Date(), start=new Date(now);
+            start.setHours(0,0,0,0);
+            for(let t=new Date(start);t<=now;t.setMinutes(t.getMinutes()+5)){
+                const h=t.getHours();
+                const marketActivity = Math.sin((h-6)*Math.PI/12)*0.7 + (h>=7&&h<=20?0.5:0) + Math.random()*0.3;
+                const bgNoise = 30 + Math.sin((h-3)*Math.PI/12)*4 + Math.random()*3;
+                const leq = clamp(bgNoise + marketActivity*18 + Math.random()*6, 25, 85);
+                const l90 = clamp(bgNoise, 22, 50);
+                const dist = Math.max(0, +(leq-l90).toFixed(1));
+                data.push({
+                    datetime:new Date(t),
+                    time:t.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false}),
+                    leq:+leq.toFixed(1), l90:+l90.toFixed(1),
+                    l10:+clamp(leq+4+Math.random()*6,30,90).toFixed(1),
+                    lmax:+clamp(leq+6+Math.random()*10,30,95).toFixed(1),
+                    disturbance:dist,
+                    distPct:+(dist/leq*100).toFixed(1)
+                });
+            }
+            return data;
+        }
+
+        function generateHistoricalData(days){
+            const all=[];
+            for(let d=days-1;d>=0;d--){
+                const date=new Date();date.setDate(date.getDate()-d);date.setHours(0,0,0,0);
+                for(let h=0;h<24;h++){
+                    for(let m=0;m<60;m+=5){
+                        const t=new Date(date);t.setHours(h,m);
+                        const marketActivity=Math.sin((h-6)*Math.PI/12)*0.7+(h>=7&&h<=20?0.5:0)+Math.random()*0.3;
+                        const bgNoise=30+Math.sin((h-3)*Math.PI/12)*4+Math.random()*3;
+                        const leq=clamp(bgNoise+marketActivity*18+Math.random()*6,25,85);
+                        const l90=clamp(bgNoise,22,50);
+                        const dist=Math.max(0,+(leq-l90).toFixed(1));
+                        all.push({
+                            datetime:new Date(t),
+                            time:t.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false}),
+                            hour:h, leq:+leq.toFixed(1), l90:+l90.toFixed(1),
+                            disturbance:dist, distPct:+(dist/leq*100).toFixed(1)
+                        });
+                    }
+                }
+            }
+            return all;
+        }
+
+        function updateStats(data){
+            if(!data.length)return;
+            const last=data[data.length-1];
+            const dist=last.disturbance;
+
+            $('sL90').innerHTML=last.l90+'<span class="stat-unit">dB(A)</span>';
+            $('sLeq').innerHTML=last.leq+'<span class="stat-unit">dB(A)</span>';
+            $('sDist').innerHTML=dist+'<span class="stat-unit">dB(A)</span>';
+            $('sDistPct').innerHTML=last.distPct+'<span class="stat-unit">%</span>';
+            const energy=Math.pow(10,last.leq/10).toExponential(2);
+            $('sEnergy').innerHTML=energy+'<span class="stat-unit">W/m²</span>';
+
+            $('sL90Bar').style.width=Math.min(100,last.l90/100*100)+'%';
+            $('sLeqBar').style.width=Math.min(100,last.leq/100*100)+'%';
+            $('sDistBar').style.width=Math.min(100,dist/30*100)+'%';
+            $('sDistPctBar').style.width=Math.min(100,last.distPct)+'%';
+            $('sEnergyBar').style.width=Math.min(100,Math.log10(Math.pow(10,last.leq/10))/8*100)+'%';
+
+            $('rtDisturbance').textContent=dist+' dB(A)';
+            $('rtDisturbance').style.color=getDistLevel(dist).color;
+            const lvl=getDistLevel(dist);
+            $('rtDisturbanceClass').textContent=lvl.label;
+            $('rtDisturbanceClass').style.color=lvl.color;
+
+            // Stats
+            const avgDist=+(data.reduce((s,d)=>s+d.disturbance,0)/data.length).toFixed(1);
+            const maxDist=Math.max(...data.map(d=>d.disturbance));
+            const avgL90=+(data.reduce((s,d)=>s+d.l90,0)/data.length).toFixed(1);
+
+            // Find peak hour
+            const hourlyMax={};data.forEach(d=>{
+                const h=d.datetime.getHours();
+                if(!hourlyMax[h]||d.disturbance>hourlyMax[h])hourlyMax[h]=d.disturbance;
+            });
+            const peakH=Object.entries(hourlyMax).sort((a,b)=>b[1]-a[1])[0];
+
+            $('avgDist').textContent=avgDist+' dB(A)';
+            $('avgDist').style.color=getDistLevel(avgDist).color;
+            $('maxDist').textContent=maxDist+' dB(A)';
+            $('maxDist').style.color=getDistLevel(maxDist).color;
+            $('avgL90').textContent=avgL90+' dB(A)';
+            $('peakHour').textContent=peakH?(peakH[0].padStart(2,'0')+':00'):'--:--';
+        }
+
+        function updateTable(data){
+            const recent=data.slice(-50).reverse();
+            $('distTable').innerHTML=recent.map((d,i)=>{
+                const lvl=getDistLevel(d.disturbance);
+                return `<tr>
+                    <td style="color:var(--text-muted)">${i+1}</td>
+                    <td>${d.time}</td>
+                    <td style="color:var(--green)">${d.l90}</td>
+                    <td style="color:var(--accent)"><strong>${d.leq}</strong></td>
+                    <td style="color:${lvl.color}"><strong>${d.disturbance}</strong></td>
+                    <td style="color:var(--text-secondary)">${d.distPct}%</td>
+                    <td><span style="color:${lvl.color};font-weight:600">${lvl.label}</span></td>
+                </tr>`;
+            }).join('');
+        }
+
+        function updateDisturbanceChart(data){
+            const labels=data.map(d=>d.time);
+            if(distChart)distChart.destroy();
+            distChart=new Chart($('disturbanceChart'),{
+                type:'line',
+                data:{
+                    labels,
+                    datasets:[
+                        {label:'L90 เสียงพื้นหลัง',data:data.map(d=>d.l90),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.08)',fill:true,tension:0.3,borderWidth:1.5,pointRadius:0,borderDash:[4,4]},
+                        {label:'Leq',data:data.map(d=>d.leq),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:0.3,borderWidth:2,pointRadius:0},
+                        {label:'เสียงรบกวน (Leq-L90)',data:data.map(d=>d.disturbance),borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.12)',fill:true,tension:0.3,borderWidth:2,pointRadius:0}
+                    ]
+                },
+                options:{
+                    responsive:true,maintainAspectRatio:true,
+                    interaction:{mode:'index',intersect:false},
+                    plugins:{
+                        legend:{display:false},
+                        annotation:{
+                            annotations:{
+                                thresh:{type:'line',yMin:SURVEILLANCE,yMax:SURVEILLANCE,borderColor:'#eab308',borderWidth:2,borderDash:[6,4],
+                                    label:{content:'ค่าเฝ้าระวัง '+SURVEILLANCE+' dB',enabled:true,position:'start',backgroundColor:'rgba(234,179,8,0.9)',color:'#000',font:{size:9,weight:'600'},padding:3}}
+                            }
+                        },
+                        tooltip:{backgroundColor:'#1e293b',borderColor:'#334155',borderWidth:1,titleColor:'#f1f5f9',bodyColor:'#94a3b8',padding:10,
+                            callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+' dB(A)'}}
+                    },
+                    scales:{
+                        x:{grid:{color:'rgba(51,65,85,0.3)'},ticks:{color:'#64748b',maxTicksLimit:20,font:{size:10}}},
+                        y:{min:0,max:80,grid:{color:'rgba(51,65,85,0.3)'},ticks:{color:'#64748b',font:{size:10},callback:v=>v+' dB'}}
+                    }
+                }
+            });
+        }
+
+        function updateHourlyChart(data){
+            const hourlySum={};
+            data.forEach(d=>{
+                const h=d.datetime.getHours();
+                if(!hourlySum[h])hourlySum[h]={sum:0,count:0};
+                hourlySum[h].sum+=d.disturbance;
+                hourlySum[h].count++;
+            });
+            const hours=Array.from({length:24},(_,i)=>i);
+            const avgDist=hours.map(h=>hourlySum[h]?+(hourlySum[h].sum/hourlySum[h].count).toFixed(1):0);
+            const colors=avgDist.map(v=>getDistLevel(v).color);
+
+            if(hourlyCh)hourlyCh.destroy();
+            hourlyCh=new Chart($('hourlyChart'),{
+                type:'bar',
+                data:{
+                    labels:hours.map(h=>h.toString().padStart(2,'0')+':00'),
+                    datasets:[{
+                        label:'เสียงรบกวนเฉลี่ย',
+                        data:avgDist,
+                        backgroundColor:colors.map(c=>c+'33'),
+                        borderColor:colors,
+                        borderWidth:1.5,
+                        borderRadius:4
+                    }]
+                },
+                options:{
+                    responsive:true,maintainAspectRatio:true,
+                    plugins:{
+                        legend:{display:false},
+                        tooltip:{backgroundColor:'#1e293b',borderColor:'#334155',borderWidth:1,
+                            callbacks:{label:ctx=>'เสียงรบกวน: '+ctx.parsed.y+' dB(A)'}},
+                        annotation:{
+                            annotations:{
+                                zeroLine:{type:'line',yMin:0,yMax:0,borderColor:'rgba(255,255,255,0.1)',borderWidth:1},
+                                avgLine:{type:'line',
+                                    yMin:avgDist.reduce((a,b)=>a+b,0)/avgDist.filter(v=>v>0).length,
+                                    yMax:avgDist.reduce((a,b)=>a+b,0)/avgDist.filter(v=>v>0).length,
+                                    borderColor:'#f97316',borderWidth:1.5,borderDash:[4,4],
+                                    label:{content:'ค่าเฉลี่ย',enabled:true,position:'end',backgroundColor:'rgba(249,115,22,0.8)',color:'#fff',font:{size:9},padding:2}}
+                            }
+                        }
+                    },
+                    scales:{
+                        x:{grid:{display:false},ticks:{color:'#64748b',font:{size:9},maxRotation:45}},
+                        y:{min:0,max:25,grid:{color:'rgba(51,65,85,0.3)'},ticks:{color:'#64748b',font:{size:10},callback:v=>v+' dB'}}
+                    }
+                }
+            });
+        }
+
+        let currentRange='today';
+        function loadData(range){
+            currentRange=range;
+            let data;
+            switch(range){
+                case'3days':data=generateHistoricalData(3);break;
+                case'7days':data=generateHistoricalData(7);break;
+                default:data=generateTodayData();
+            }
+            updateStats(data);updateTable(data);updateDisturbanceChart(data);updateHourlyChart(data);
+        }
+
+        document.querySelectorAll('.time-btn').forEach(btn=>{
+            btn.addEventListener('click',function(){
+                document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active'));
+                this.classList.add('active');
+                loadData(this.dataset.range);
+            });
+        });
+
+        setTimeout(()=>{loadData('today');$('loader').classList.add('hidden');showNotification('โหลดข้อมูลสำเร็จ — แสดงข้อมูลตัวอย่าง')},800);
+
+        // Real-time update every 5 seconds
+        setInterval(()=>{
+            loadData(currentRange);
+            showNotification('อัปเดต '+new Date().toLocaleTimeString('th-TH'));
+        },5000);
+
+        function showNotification(text){$('notifText').textContent=text;$('notification').classList.add('show');setTimeout(()=>$('notification').classList.remove('show'),2500)}
+    })();
+    </script>
+</body>
+</html>
