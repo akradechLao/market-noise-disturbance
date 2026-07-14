@@ -249,12 +249,15 @@
     <main class="main">
         <!-- Formula -->
         <div class="formula-box">
-            <div class="formula-title">หลักการคำนวณเสียงรบกวน (Noise Disturbance Calculation)</div>
-            <div class="formula-text">Noise Disturbance = Leq - L90 &nbsp;&nbsp;(หน่วย: dB(A))</div>
+            <div class="formula-title">สูตรคำนวณตามประกาศคณะกรรมการควบคุมมลพิษ พ.ศ. 2565 (สมการที่ 1)</div>
+            <div class="formula-text">LAeq,Tr = [10 log₁₀(10^(0.1×LAeq,Ts) − 10^(0.1×LAeq,R))] + 10 log₁₀(Ts/Tr)</div>
             <div class="formula-desc">
-                <strong>L90</strong> = ค่าระดับเสียงที่มีเวลาสะสมมากกว่า 90% ของช่วงเวลาที่วัดได้ ใช้เป็นค่า <strong>เสียงพื้นหลัง (Background Noise)</strong><br>
-                <strong>Leq</strong> = ค่าระดับเสียงเฉลี่ยเทียบเท่า (Equivalent Continuous Sound Level)<br>
-                <strong>Leq - L90</strong> = ค่าเสียงที่ <strong>กิจกรรมตลาด</strong> เพิ่มขึ้นเหนือเสียงพื้นหลัง = <strong>ระดับเสียงรบกวน</strong>
+                <strong>LAeq,Ts</strong> = ระดับเสียงขณะเกิดเสียงของแหล่งกำเนิด (Leq) (dB(A))<br>
+                <strong>LAeq,R</strong> = ระดับเสียงขณะไม่มีการรบกวน (L90) (dB(A))<br>
+                <strong>Ts</strong> = ระยะเวลาที่แหล่งกำเนิดเกิดเสียง = 5 นาที (ช่วงวัด 5 นาที)<br>
+                <strong>Tr</strong> = ระยะเวลาอ้างอิง = 60 นาที (กลางวัน) หรือ 5 นาที (กลางคืน)<br>
+                <strong>ค่าระดับการรบกวน</strong> = Rating Level − LA90 (ระดับเสียงพื้นฐาน)<br>
+                <strong>เกณฑ์ตัดสิน:</strong> > 10 dB = เป็นเสียงรบกวน
             </div>
         </div>
 
@@ -313,7 +316,7 @@
         <!-- Realtime Bar -->
         <div class="realtime-bar">
             <div class="realtime-dot"></div>
-            <div class="realtime-label">เสียงรบกวนขณะนี้</div>
+            <div class="realtime-label">ค่าระดับการรบกวนขณะนี้</div>
             <div class="realtime-value" id="rtDisturbance">-- dB(A)</div>
             <div class="realtime-sub" id="rtDisturbanceClass">รอข้อมูล</div>
         </div>
@@ -321,27 +324,27 @@
         <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-card bg-noise">
-                <div class="stat-label">L90 (Background Noise)</div>
+                <div class="stat-label">L90 (ระดับเสียงพื้นฐาน)</div>
                 <div class="stat-value" id="sL90">--<span class="stat-unit">dB(A)</span></div>
-                <div class="stat-sub">เสียงพื้นหลัง 90% เวลาเกินค่านี้</div>
+                <div class="stat-sub">Percentile 90 ใช้เป็น LA90</div>
                 <div class="stat-bar"><div class="stat-bar-fill" id="sL90Bar" style="width:0%;background:linear-gradient(90deg,var(--green),#86efac)"></div></div>
             </div>
             <div class="stat-card current-leq">
-                <div class="stat-label">Leq (Current)</div>
+                <div class="stat-label">Leq (LAeq,Ts ขณะเกิดเสียง)</div>
                 <div class="stat-value" id="sLeq">--<span class="stat-unit">dB(A)</span></div>
-                <div class="stat-sub">ค่าระดับเสียงเฉลี่ยเทียบเท่า</div>
+                <div class="stat-sub">ระดับเสียงเฉลี่ยขณะแหล่งกำเนิดเกิดเสียง</div>
                 <div class="stat-bar"><div class="stat-bar-fill" id="sLeqBar" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--cyan))"></div></div>
             </div>
             <div class="stat-card disturbance">
-                <div class="stat-label">Disturbance (Leq - L90)</div>
+                <div class="stat-label">ค่าระดับการรบกวน</div>
                 <div class="stat-value" id="sDist">--<span class="stat-unit">dB(A)</span></div>
-                <div class="stat-sub">ระดับเสียงรบกวนจากกิจกรรมตลาด</div>
+                <div class="stat-sub">Rating Level − LA90 (สมการที่ 1)</div>
                 <div class="stat-bar"><div class="stat-bar-fill" id="sDistBar" style="width:0%;background:linear-gradient(90deg,var(--orange),#fdba74)"></div></div>
             </div>
             <div class="stat-card disturbance-pct">
-                <div class="stat-label">% Disturbance Ratio</div>
+                <div class="stat-label">% สัดส่วนเสียงรบกวน</div>
                 <div class="stat-value" id="sDistPct">--<span class="stat-unit">%</span></div>
-                <div class="stat-sub">สัดส่วนเสียงรบกวนต่อเสียงทั้งหมด</div>
+                <div class="stat-sub">ค่าระดับการรบกวน/Leq × 100</div>
                 <div class="stat-bar"><div class="stat-bar-fill" id="sDistPctBar" style="width:0%;background:linear-gradient(90deg,var(--red),#fca5a5)"></div></div>
             </div>
             <div class="stat-card energy">
@@ -466,9 +469,10 @@
                             <tr>
                                 <th>#</th>
                                 <th>เวลา</th>
-                                <th>L90</th>
-                                <th>Leq</th>
-                                <th>เสียงรบกวน</th>
+                                <th>L90 (LA90)</th>
+                                <th>Leq (LAeq,Ts)</th>
+                                <th>Rating Level</th>
+                                <th>ค่าระดับการรบกวน</th>
                                 <th>%Ratio</th>
                                 <th>ระดับ</th>
                             </tr>
@@ -620,6 +624,14 @@
             return +ldn.toFixed(1);
         }
 
+        // Formula 1: LAeq,Tr = [10 log10(10^(0.1×LAeq,Ts) - 10^(0.1×LAeq,R))] + 10 log10(Ts/Tr)
+        function calculateRatingLevel(LAeqTs, LAeqR, Ts, Tr) {
+            const term1 = Math.pow(10, 0.1 * LAeqTs) - Math.pow(10, 0.1 * LAeqR);
+            if (term1 <= 0) return 0;
+            const LAeqTr = 10 * Math.log10(term1) + 10 * Math.log10(Ts / Tr);
+            return +LAeqTr.toFixed(1);
+        }
+
         function getDistLevel(d){
             if(d<=3) return {label:'แทบไม่มี',cls:'val-safe',color:'var(--green)'};
             if(d<=6) return {label:'เล็กน้อย',cls:'val-low',color:'var(--cyan)'};
@@ -638,15 +650,25 @@
                 const bgNoise = 30 + Math.sin((h-3)*Math.PI/12)*4 + Math.random()*3;
                 const leq = clamp(bgNoise + marketActivity*18 + Math.random()*6, 25, 85);
                 const l90 = clamp(bgNoise, 22, 50);
-                const dist = Math.max(0, +(leq-l90).toFixed(1));
+                // Ts = 5 min (measurement interval), Tr = 60 min (day) or 5 min (night)
+                const Ts = 5;
+                const Tr = (h >= 22 || h < 6) ? 5 : 60;
+                const ratingLevel = calculateRatingLevel(leq, l90, Ts, Tr);
+                // Add +3 dB for nighttime
+                const addition = (h >= 22 || h < 6) ? 3 : 0;
+                const ratingWithAdd = ratingLevel + addition;
+                const dist = Math.max(0, +(ratingWithAdd - l90).toFixed(1));
                 data.push({
                     datetime:new Date(t),
                     time:t.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false}),
                     leq:+leq.toFixed(1), l90:+l90.toFixed(1),
                     l10:+clamp(leq+4+Math.random()*6,30,90).toFixed(1),
                     lmax:+clamp(leq+6+Math.random()*10,30,95).toFixed(1),
+                    ratingLevel:+ratingLevel.toFixed(1),
+                    ratingWithAdd:+ratingWithAdd.toFixed(1),
                     disturbance:dist,
-                    distPct:+(dist/leq*100).toFixed(1)
+                    distPct:+(dist/leq*100).toFixed(1),
+                    Ts:Ts, Tr:Tr, addition:addition
                 });
             }
             return data;
@@ -663,12 +685,20 @@
                         const bgNoise=30+Math.sin((h-3)*Math.PI/12)*4+Math.random()*3;
                         const leq=clamp(bgNoise+marketActivity*18+Math.random()*6,25,85);
                         const l90=clamp(bgNoise,22,50);
-                        const dist=Math.max(0,+(leq-l90).toFixed(1));
+                        const Ts=5;
+                        const Tr=(h>=22||h<6)?5:60;
+                        const ratingLevel=calculateRatingLevel(leq,l90,Ts,Tr);
+                        const addition=(h>=22||h<6)?3:0;
+                        const ratingWithAdd=ratingLevel+addition;
+                        const dist=Math.max(0,+(ratingWithAdd-l90).toFixed(1));
                         all.push({
                             datetime:new Date(t),
                             time:t.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false}),
                             hour:h, leq:+leq.toFixed(1), l90:+l90.toFixed(1),
-                            disturbance:dist, distPct:+(dist/leq*100).toFixed(1)
+                            ratingLevel:+ratingLevel.toFixed(1),
+                            ratingWithAdd:+ratingWithAdd.toFixed(1),
+                            disturbance:dist, distPct:+(dist/leq*100).toFixed(1),
+                            Ts:Ts, Tr:Tr, addition:addition
                         });
                     }
                 }
@@ -729,6 +759,7 @@
                     <td>${d.time}</td>
                     <td style="color:var(--green)">${d.l90}</td>
                     <td style="color:var(--accent)"><strong>${d.leq}</strong></td>
+                    <td style="color:var(--purple);font-weight:600">${d.ratingWithAdd}</td>
                     <td style="color:${lvl.color}"><strong>${d.disturbance}</strong></td>
                     <td style="color:var(--text-secondary)">${d.distPct}%</td>
                     <td><span style="color:${lvl.color};font-weight:600">${lvl.label}</span></td>
@@ -859,7 +890,12 @@
                         const bgNoise=30+Math.sin((h-3)*Math.PI/12)*4+Math.random()*3;
                         const leq=clamp(bgNoise+marketActivity*18+Math.random()*6,25,85);
                         const l90=clamp(bgNoise,22,50);
-                        const dist=Math.max(0,+(leq-l90).toFixed(1));
+                        const Ts=5;
+                        const Tr=(h>=22||h<6)?5:60;
+                        const ratingLevel=calculateRatingLevel(leq,l90,Ts,Tr);
+                        const addition=(h>=22||h<6)?3:0;
+                        const ratingWithAdd=ratingLevel+addition;
+                        const dist=Math.max(0,+(ratingWithAdd-l90).toFixed(1));
                         all.push({
                             datetime:new Date(t),
                             date:t.toLocaleDateString('th-TH'),
@@ -867,7 +903,10 @@
                             hour:h,leq:+leq.toFixed(1),l90:+l90.toFixed(1),
                             l10:+clamp(leq+4+Math.random()*6,30,90).toFixed(1),
                             lmax:+clamp(leq+6+Math.random()*10,30,95).toFixed(1),
-                            disturbance:dist,distPct:+(dist/leq*100).toFixed(1)
+                            ratingLevel:+ratingLevel.toFixed(1),
+                            ratingWithAdd:+ratingWithAdd.toFixed(1),
+                            disturbance:dist,distPct:+(dist/leq*100).toFixed(1),
+                            Ts:Ts,Tr:Tr,addition:addition
                         });
                     }
                 }
