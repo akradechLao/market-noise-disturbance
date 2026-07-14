@@ -320,8 +320,27 @@
     </main>
 
     <script>
-    (function(){
+        // Theme (must be outside IIFE for onclick to work)
+        const savedTheme=localStorage.getItem('theme')||'dark';
+        document.documentElement.setAttribute('data-theme',savedTheme);
+
+        function toggleTheme(){
+            const cur=document.documentElement.getAttribute('data-theme');
+            const next=cur==='light'?'dark':'light';
+            document.documentElement.setAttribute('data-theme',next);
+            localStorage.setItem('theme',next);
+            document.getElementById('themeToggle').textContent=next==='light'?'🌙':'☀️';
+            setTimeout(()=>{
+                if(typeof window._rerenderCharts==='function'){
+                    window._rerenderCharts();
+                }
+            },100);
+        }
+        document.getElementById('themeToggle').textContent=savedTheme==='light'?'🌙':'☀️';
+
         function $(id){return document.getElementById(id)}
+
+    (function(){
         function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 
         // Get actual computed CSS variable value for Chart.js
@@ -364,25 +383,7 @@
             }
         }
 
-        // Theme
-        const savedTheme=localStorage.getItem('theme')||'dark';
-        document.documentElement.setAttribute('data-theme',savedTheme);
-        $('themeToggle').textContent=savedTheme==='light'?'🌙':'☀️';
-        window.toggleTheme=function(){
-            const cur=document.documentElement.getAttribute('data-theme');
-            const next=cur==='light'?'dark':'light';
-            document.documentElement.setAttribute('data-theme',next);
-            localStorage.setItem('theme',next);
-            $('themeToggle').textContent=next==='light'?'🌙':'☀️';
-            // Re-render charts with new theme colors
-            setTimeout(()=>{
-                if(analysisData.length){
-                    renderMainChart(analysisData);
-                    renderStatChart(analysisData);
-                    renderExceedChart(analysisData);
-                }
-            },100);
-        };
+        // Theme moved outside IIFE for global access
 
         // Init dates
         const today=new Date().toISOString().split('T')[0];
@@ -520,6 +521,14 @@
             renderExceedChart(data);
             renderTable(data);
         }
+
+        window._rerenderCharts=function(){
+            if(analysisData.length){
+                renderMainChart(analysisData);
+                renderStatChart(analysisData);
+                renderExceedChart(analysisData);
+            }
+        };
 
         function renderMainChart(data){
             if(anaChart)anaChart.destroy();
