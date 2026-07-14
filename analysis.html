@@ -328,8 +328,17 @@
 
     <script>
         function $(id){return document.getElementById(id)}
+        function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+        function getCSS(varName){return getComputedStyle(document.documentElement).getPropertyValue(varName).trim()}
 
-        // Theme switching
+        var bgMode='auto';
+        var analysisData=[];
+        var bgNoiseValue=35;
+        var threshold=55;
+        var alertLevel=10;
+        var anaChart=null, statCh=null, exceedCh=null;
+        var additionMode='none';
+
         function toggleTheme(){
             var html=document.documentElement;
             var current=html.getAttribute('data-theme');
@@ -345,40 +354,20 @@
         document.documentElement.setAttribute('data-theme',savedTheme);
         $('themeToggle').textContent=savedTheme==='light'?'🌙':'☀️';
 
-    (function(){
-        function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
-
-        // Get actual computed CSS variable value for Chart.js
-        function getCSS(varName){return getComputedStyle(document.documentElement).getPropertyValue(varName).trim()}
-
-        let bgMode='auto';
-        let analysisData=[];
-        let bgNoiseValue=35;
-        let threshold=55;
-        let alertLevel=10;
-        let anaChart=null, statCh=null, exceedCh=null;
-        let additionMode='none';
-
-        window.selectAddition=function(mode){
+        function selectAddition(mode){
             additionMode=mode;
-            document.querySelectorAll('input[name="addition"]').forEach(el=>{
+            document.querySelectorAll('input[name="addition"]').forEach(function(el){
                 el.closest('.radio-opt').classList.toggle('selected',el.value===mode);
             });
-        };
+        }
 
-        // Formula 1: LAeq,Tr = [10 log10(10^(0.1×LAeq,Ts) - 10^(0.1×LAeq,R))] + 10 log10(Ts/Tr)
         function calculateRatingLevel(LAeqTs, LAeqR, Ts, Tr) {
-            // LAeqTs = sound level when source is operating
-            // LAeqR = residual sound level (when source not operating)
-            // Ts = measurement duration of source
-            // Tr = reference duration
-            const term1 = Math.pow(10, 0.1 * LAeqTs) - Math.pow(10, 0.1 * LAeqR);
+            var term1 = Math.pow(10, 0.1 * LAeqTs) - Math.pow(10, 0.1 * LAeqR);
             if (term1 <= 0) return 0;
-            const LAeqTr = 10 * Math.log10(term1) + 10 * Math.log10(Ts / Tr);
+            var LAeqTr = 10 * Math.log10(term1) + 10 * Math.log10(Ts / Tr);
             return +LAeqTr.toFixed(1);
         }
 
-        // Get addition value based on mode
         function getAdditionValue() {
             switch(additionMode) {
                 case 'night': return 3;
@@ -388,40 +377,37 @@
             }
         }
 
-        // Theme moved outside IIFE for global access
-
-        // Init dates
-        const today=new Date().toISOString().split('T')[0];
+        var today=new Date().toISOString().split('T')[0];
         $('inpStartDate').value=today;
         $('inpEndDate').value=today;
 
-        window.selectBgMode=function(mode){
+        function selectBgMode(mode){
             bgMode=mode;
-            document.querySelectorAll('#bgModeGroup .radio-opt').forEach(el=>{
+            document.querySelectorAll('#bgModeGroup .radio-opt').forEach(function(el){
                 el.classList.toggle('selected',el.querySelector('input').value===mode);
             });
             $('customBgSection').style.display=mode==='custom'?'block':'none';
-        };
+        }
 
-        window.resetForm=function(){
+        function resetForm(){
             $('inpStartDate').value=today;$('inpEndDate').value=today;
             $('inpStartTime').value='00:00';$('inpEndTime').value='23:59';
             $('inpThreshold').value='55';$('inpAlert').value='10';
             $('customBgValue').value='';$('customBgSource').value='';
             selectBgMode('auto');
             $('resultSection').style.display='none';
-        };
+        }
 
         function generateData(start,end){
-            const data=[];const s=new Date(start);const e=new Date(end);
-            for(let cur=new Date(s);cur<=e;cur.setDate(cur.getDate()+1)){
-                for(let h=0;h<24;h++){
-                    for(let m=0;m<60;m+=5){
-                        const t=new Date(cur);t.setHours(h,m);
-                        const ma=Math.sin((h-6)*Math.PI/12)*0.7+(h>=7&&h<=20?0.5:0)+Math.random()*0.3;
-                        const bg=30+Math.sin((h-3)*Math.PI/12)*4+Math.random()*3;
-                        const leq=clamp(bg+ma*18+Math.random()*6,25,85);
-                        const l90=clamp(bg,22,50);
+            var data=[];var s=new Date(start);var e=new Date(end);
+            for(var cur=new Date(s);cur<=e;cur.setDate(cur.getDate()+1)){
+                for(var h=0;h<24;h++){
+                    for(var m=0;m<60;m+=5){
+                        var t=new Date(cur);t.setHours(h,m);
+                        var ma=Math.sin((h-6)*Math.PI/12)*0.7+(h>=7&&h<=20?0.5:0)+Math.random()*0.3;
+                        var bg=30+Math.sin((h-3)*Math.PI/12)*4+Math.random()*3;
+                        var leq=clamp(bg+ma*18+Math.random()*6,25,85);
+                        var l90=clamp(bg,22,50);
                         data.push({
                             datetime:new Date(t),
                             date:t.toLocaleDateString('th-TH'),
@@ -434,93 +420,68 @@
             return data;
         }
 
-        function getLevel(dist,alertLvl){
+        function getLevel(dist){
             if(dist<=10)return{label:'ไม่เป็นเสียงรบกวน',cls:'badge-safe'};
             return{label:'เป็นเสียงรบกวน',cls:'badge-crit'};
         }
 
-        window.runAnalysis=function(){
-            const sd=$('inpStartDate').value,st=$('inpStartTime').value;
-            const ed=$('inpEndDate').value,et=$('inpEndTime').value;
+        function runAnalysis(){
+            var sd=$('inpStartDate').value,st=$('inpStartTime').value;
+            var ed=$('inpEndDate').value,et=$('inpEndTime').value;
             if(!sd||!ed){alert('กรุณาระบุวันที่');return;}
             threshold=parseFloat($('inpThreshold').value)||55;
             alertLevel=parseFloat($('inpAlert').value)||10;
-            const Ts=parseFloat($('inpTs').value)||60;
-            const Tr=parseFloat($('inpTr').value)||60;
-            const additionValue=getAdditionValue();
-
-            const startDT=new Date(sd+'T'+st+':00');
-            const endDT=new Date(ed+'T'+et+':00');
-
-            let rawData=generateData(startDT,endDT);
-
-            // Filter by time range
-            analysisData=rawData.filter(d=>d.datetime>=startDT && d.datetime<=endDT);
-
+            var Ts=parseFloat($('inpTs').value)||60;
+            var Tr=parseFloat($('inpTr').value)||60;
+            var additionValue=getAdditionValue();
+            var startDT=new Date(sd+'T'+st+':00');
+            var endDT=new Date(ed+'T'+et+':00');
+            var rawData=generateData(startDT,endDT);
+            analysisData=rawData.filter(function(d){return d.datetime>=startDT && d.datetime<=endDT;});
             if(!analysisData.length){alert('ไม่มีข้อมูลในช่วงเวลานี้');return;}
-
-            // Background noise (LA90)
             if(bgMode==='auto'){
-                bgNoiseValue=+(analysisData.reduce((s,d)=>s+d.l90,0)/analysisData.length).toFixed(1);
+                bgNoiseValue=+(analysisData.reduce(function(s,d){return s+d.l90;},0)/analysisData.length).toFixed(1);
             }else{
                 bgNoiseValue=parseFloat($('customBgValue').value)||35;
             }
-
-            // Calculate using Formula 1
-            analysisData.forEach(d=>{
+            analysisData.forEach(function(d){
                 d.bg=bgNoiseValue;
                 d.la90=bgNoiseValue;
-                // LAeq,R = residual sound level (when source not operating) = use L90 as approximation
                 d.laEqR=d.l90;
-                // LAeq,Ts = specific sound level (when source operating) = Leq
                 d.laEqTs=d.leq;
-                
-                // Calculate Rating Level using Formula 1
                 d.ratingLevel=calculateRatingLevel(d.laEqTs, d.laEqR, Ts, Tr);
-                
-                // Add special additions (+3 dB night, +5 dB impulse)
                 d.ratingLevelWithAddition=d.ratingLevel+additionValue;
-                
-                // Disturbance = Rating Level - LA90
                 d.disturbance=Math.max(0,+(d.ratingLevelWithAddition-d.la90).toFixed(1));
                 d.pctAbove=+((d.disturbance/d.bg)*100).toFixed(1);
                 d.exceedsThreshold=d.ratingLevelWithAddition>threshold;
-                d.level=getLevel(d.disturbance,alertLevel);
+                d.level=getLevel(d.disturbance);
                 d.Ts=Ts;
                 d.Tr=Tr;
                 d.additionValue=additionValue;
             });
-
             renderResults();
             $('resultSection').style.display='block';
             $('resultSection').scrollIntoView({behavior:'smooth',block:'start'});
-        };
+        }
 
         function renderResults(){
-            const data=analysisData;
-            const total=data.length;
-            const exceedCount=data.filter(d=>d.exceedsThreshold).length;
-            const avgDist=+(data.reduce((s,d)=>s+d.disturbance,0)/total).toFixed(1);
-            const maxDist=Math.max(...data.map(d=>d.disturbance));
-            const avgLeq=+(data.reduce((s,d)=>s+d.leq,0)/total).toFixed(1);
-            const avgRating=+(data.reduce((s,d)=>s+d.ratingLevelWithAddition,0)/total).toFixed(1);
-            const exceedPct=+((exceedCount/total)*100).toFixed(1);
-            const Ts=parseFloat($('inpTs').value)||60;
-            const Tr=parseFloat($('inpTr').value)||60;
-            const additionValue=getAdditionValue();
-
-            // Summary
-            $('resultSummary').innerHTML=`
-                <div class="summary-card"><div class="summary-label">ระดับเสียงพื้นฐาน (LA90 เฉลี่ย)</div><div class="summary-value" style="color:var(--green)">${bgNoiseValue}<span class="summary-unit"> dB(A)</span></div></div>
-                <div class="summary-card"><div class="summary-label">Leq เฉลี่ย (ขณะเกิดเสียง)</div><div class="summary-value" style="color:var(--accent)">${avgLeq}<span class="summary-unit"> dB(A)</span></div></div>
-                <div class="summary-card"><div class="summary-label">Rating Level เฉลี่ย (สมการที่ 1)</div><div class="summary-value" style="color:var(--purple)">${avgRating}<span class="summary-unit"> dB(A)</span></div></div>
-                <div class="summary-card"><div class="summary-label">ค่าระดับการรบกวนเฉลี่ย</div><div class="summary-value" style="color:var(--orange)">${avgDist}<span class="summary-unit"> dB(A)</span></div></div>
-                <div class="summary-card"><div class="summary-label">ค่าระดับการรบกวนสูงสุด</div><div class="summary-value" style="color:var(--red)">${maxDist}<span class="summary-unit"> dB(A)</span></div></div>
-                <div class="summary-card"><div class="summary-label">จุดเกินค่าเฝ้าระวัง (> ${threshold} dB)</div><div class="summary-value" style="color:var(--yellow)">${exceedCount}<span class="summary-unit"> / ${total} จุด</span></div></div>
-                <div class="summary-card"><div class="summary-label">% เกินค่าเฝ้าระวัง</div><div class="summary-value" style="color:${exceedPct>10?'var(--red)':'var(--yellow)'}">${exceedPct}<span class="summary-unit"> %</span></div></div>
-                <div class="summary-card"><div class="summary-label">สรุปผล</div><div class="summary-value" style="color:${exceedCount>0?'var(--red)':'var(--green)'}; font-size:1rem">${exceedCount>0?'เป็นเสียงรบกวน':'ไม่เป็นเสียงรบกวน'}</div><div class="summary-item-desc">เกณฑ์: > 10 dB = เป็นเสียงรบกวน</div></div>
-            `;
-
+            var data=analysisData;
+            var total=data.length;
+            var exceedCount=data.filter(function(d){return d.exceedsThreshold;}).length;
+            var avgDist=+(data.reduce(function(s,d){return s+d.disturbance;},0)/total).toFixed(1);
+            var maxDist=Math.max.apply(null,data.map(function(d){return d.disturbance;}));
+            var avgLeq=+(data.reduce(function(s,d){return s+d.leq;},0)/total).toFixed(1);
+            var avgRating=+(data.reduce(function(s,d){return s+d.ratingLevelWithAddition;},0)/total).toFixed(1);
+            var exceedPct=+((exceedCount/total)*100).toFixed(1);
+            $('resultSummary').innerHTML=
+                '<div class="summary-card"><div class="summary-label">ระดับเสียงพื้นฐาน (LA90 เฉลี่ย)</div><div class="summary-value" style="color:var(--green)">'+bgNoiseValue+'<span class="summary-unit"> dB(A)</span></div></div>'+
+                '<div class="summary-card"><div class="summary-label">Leq เฉลี่ย (ขณะเกิดเสียง)</div><div class="summary-value" style="color:var(--accent)">'+avgLeq+'<span class="summary-unit"> dB(A)</span></div></div>'+
+                '<div class="summary-card"><div class="summary-label">Rating Level เฉลี่ย (สมการที่ 1)</div><div class="summary-value" style="color:var(--purple)">'+avgRating+'<span class="summary-unit"> dB(A)</span></div></div>'+
+                '<div class="summary-card"><div class="summary-label">ค่าระดับการรบกวนเฉลี่ย</div><div class="summary-value" style="color:var(--orange)">'+avgDist+'<span class="summary-unit"> dB(A)</span></div></div>'+
+                '<div class="summary-card"><div class="summary-label">ค่าระดับการรบกวนสูงสุด</div><div class="summary-value" style="color:var(--red)">'+maxDist+'<span class="summary-unit"> dB(A)</span></div></div>'+
+                '<div class="summary-card"><div class="summary-label">จุดเกินค่าเฝ้าระวัง (> '+threshold+' dB)</div><div class="summary-value" style="color:var(--yellow)">'+exceedCount+'<span class="summary-unit"> / '+total+' จุด</span></div></div>'+
+                '<div class="summary-card"><div class="summary-label">% เกินค่าเฝ้าระวัง</div><div class="summary-value" style="color:'+(exceedPct>10?'var(--red)':'var(--yellow)')+'">'+exceedPct+'<span class="summary-unit"> %</span></div></div>'+
+                '<div class="summary-card"><div class="summary-label">สรุปผล</div><div class="summary-value" style="color:'+(exceedCount>0?'var(--red)':'var(--green)')+'; font-size:1rem">'+(exceedCount>0?'เป็นเสียงรบกวน':'ไม่เป็นเสียงรบกวน')+'</div><div class="summary-item-desc">เกณฑ์: > 10 dB = เป็นเสียงรบกวน</div></div>';
             renderMainChart(data);
             renderStatChart(data);
             renderExceedChart(data);
@@ -537,48 +498,41 @@
 
         function renderMainChart(data){
             if(anaChart)anaChart.destroy();
-            const isDark=document.documentElement.getAttribute('data-theme')!=='light';
-            
-            const datasets = [
-                {label:'Leq',data:data.map(d=>d.leq),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:.3,borderWidth:1.5,pointRadius:0},
-                {label:'ระดับเสียงพื้นฐาน (L90)',data:data.map(d=>d.bg),borderColor:'#22c55e',backgroundColor:'transparent',tension:0,borderWidth:1,pointRadius:0,borderDash:[6,3]},
-                {label:'ค่าระดับการรบกวน',data:data.map(d=>d.disturbance),borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.1)',fill:true,tension:.3,borderWidth:2,pointRadius:0}
+            var datasets = [
+                {label:'Leq',data:data.map(function(d){return d.leq;}),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:.3,borderWidth:1.5,pointRadius:0},
+                {label:'ระดับเสียงพื้นฐาน (L90)',data:data.map(function(d){return d.bg;}),borderColor:'#22c55e',backgroundColor:'transparent',tension:0,borderWidth:1,pointRadius:0,borderDash:[6,3]},
+                {label:'ค่าระดับการรบกวน',data:data.map(function(d){return d.disturbance;}),borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.1)',fill:true,tension:.3,borderWidth:2,pointRadius:0}
             ];
-
             anaChart=new Chart($('analysisChart'),{
                 type:'line',
-                data:{
-                    labels:data.map(d=>d.date+' '+d.time),
-                    datasets:datasets
-                },
+                data:{labels:data.map(function(d){return d.date+' '+d.time;}),datasets:datasets},
                 options:{
                     responsive:true,maintainAspectRatio:true,interaction:{mode:'index',intersect:false},
                     plugins:{legend:{display:false},
                         annotation:{annotations:{
                             thresh:{type:'line',yMin:threshold,yMax:threshold,borderColor:getCSS('--yellow'),borderWidth:2,borderDash:[6,4],label:{content:'ค่าเฝ้าระวัง '+threshold+' dB',enabled:true,position:'start',backgroundColor:getCSS('--yellow'),color:'#000',font:{size:9,weight:'600'},padding:3}}
                         }},
-                        tooltip:{backgroundColor:getCSS('--tooltip-bg'),borderColor:getCSS('--tooltip-border'),borderWidth:1,titleColor:getCSS('--t1'),bodyColor:getCSS('--t2'),titleFont:{weight:'600'},bodyFont:{size:12},callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+' dB(A)'}}
+                        tooltip:{backgroundColor:getCSS('--tooltip-bg'),borderColor:getCSS('--tooltip-border'),borderWidth:1,titleColor:getCSS('--t1'),bodyColor:getCSS('--t2'),titleFont:{weight:'600'},bodyFont:{size:12},callbacks:{label:function(ctx){return ctx.dataset.label+': '+ctx.parsed.y+' dB(A)';}}}
                     },
-                    scales:{x:{display:false},y:{min:0,max:Math.max(100,...data.map(d=>d.leq))+5,grid:{color:getCSS('--grid')},ticks:{color:getCSS('--tick'),callback:v=>v+' dB'}}}
+                    scales:{x:{display:false},y:{min:0,max:Math.max.apply(null,[100].concat(data.map(function(d){return d.leq;})))+5,grid:{color:getCSS('--grid')},ticks:{color:getCSS('--tick'),callback:function(v){return v+' dB';}}}}
                 }
             });
         }
 
         function renderStatChart(data){
             if(statCh)statCh.destroy();
-            const levels=[{l:'ไม่เป็นเสียงรบกวน',min:0,max:10,c:'#22c55e'},{l:'เป็นเสียงรบกวน',min:10,max:99,c:'#ef4444'}];
-            const counts=levels.map(l=>data.filter(d=>d.disturbance>=l.min&&d.disturbance<l.max).length);
-
+            var levels=[{l:'ไม่เป็นเสียงรบกวน',min:0,max:10,c:'#22c55e'},{l:'เป็นเสียงรบกวน',min:10,max:99,c:'#ef4444'}];
+            var counts=levels.map(function(l){return data.filter(function(d){return d.disturbance>=l.min&&d.disturbance<l.max;}).length;});
             statCh=new Chart($('statChart'),{
                 type:'doughnut',
-                data:{labels:levels.map(l=>l.l),datasets:[{data:counts,backgroundColor:levels.map(l=>l.c),borderColor:getCSS('--card'),borderWidth:2}]},
-                options:{responsive:true,maintainAspectRatio:true,cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:getCSS('--t2'),font:{size:9},padding:6,usePointStyle:true}},tooltip:{backgroundColor:getCSS('--tooltip-bg'),borderColor:getCSS('--tooltip-border'),titleColor:getCSS('--t1'),bodyColor:getCSS('--t2'),callbacks:{label:ctx=>{const t=counts.reduce((a,b)=>a+b,0);return ctx.label+': '+ctx.parsed+' จุด ('+((ctx.parsed/t)*100).toFixed(1)+'%)'}}}}}
+                data:{labels:levels.map(function(l){return l.l;}),datasets:[{data:counts,backgroundColor:levels.map(function(l){return l.c;}),borderColor:getCSS('--card'),borderWidth:2}]},
+                options:{responsive:true,maintainAspectRatio:true,cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:getCSS('--t2'),font:{size:9},padding:6,usePointStyle:true}},tooltip:{backgroundColor:getCSS('--tooltip-bg'),borderColor:getCSS('--tooltip-border'),titleColor:getCSS('--t1'),bodyColor:getCSS('--t2'),callbacks:{label:function(ctx){var t=counts.reduce(function(a,b){return a+b;},0);return ctx.label+': '+ctx.parsed+' จุด ('+((ctx.parsed/t)*100).toFixed(1)+'%)';}}}}}
             });
         }
 
         function renderExceedChart(data){
             if(exceedCh)exceedCh.destroy();
-            const exceedData=data.filter(d=>d.exceedsThreshold);
+            var exceedData=data.filter(function(d){return d.exceedsThreshold;});
             if(!exceedData.length){
                 $('exceedChartWrap').innerHTML='<div style="text-align:center;padding:2rem;color:var(--t3);font-size:0.85rem">ไม่มีจุดที่เกินค่าเฝ้าระวัง '+threshold+' dB(A) ในช่วงเวลานี้</div>';
                 return;
@@ -587,12 +541,12 @@
             exceedCh=new Chart($('exceedChart'),{
                 type:'bar',
                 data:{
-                    labels:exceedData.map(d=>d.date+' '+d.time),
+                    labels:exceedData.map(function(d){return d.date+' '+d.time;}),
                     datasets:[{
                         label:'Leq (เกิน '+threshold+' dB)',
-                        data:exceedData.map(d=>d.leq),
-                        backgroundColor:exceedData.map(d=>d.leq>threshold+10?'rgba(239,68,68,0.6)':'rgba(234,179,8,0.6)'),
-                        borderColor:exceedData.map(d=>d.leq>threshold+10?'#ef4444':'#eab308'),
+                        data:exceedData.map(function(d){return d.leq;}),
+                        backgroundColor:exceedData.map(function(d){return d.leq>threshold+10?'rgba(239,68,68,0.6)':'rgba(234,179,8,0.6)';}),
+                        borderColor:exceedData.map(function(d){return d.leq>threshold+10?'#ef4444':'#eab308';}),
                         borderWidth:1,borderRadius:3
                     }]
                 },
@@ -600,101 +554,86 @@
                     responsive:true,maintainAspectRatio:true,
                     plugins:{legend:{display:false},
                         annotation:{annotations:{thresh:{type:'line',yMin:threshold,yMax:threshold,borderColor:getCSS('--yellow'),borderWidth:2,borderDash:[4,4]}}},
-                        tooltip:{backgroundColor:getCSS('--tooltip-bg'),borderColor:getCSS('--tooltip-border'),titleColor:getCSS('--t1'),bodyColor:getCSS('--t2'),callbacks:{label:ctx=>'Leq: '+ctx.parsed.y+' dB(A) (เกิน '+(ctx.parsed.y-threshold).toFixed(1)+' dB)'}}
+                        tooltip:{backgroundColor:getCSS('--tooltip-bg'),borderColor:getCSS('--tooltip-border'),titleColor:getCSS('--t1'),bodyColor:getCSS('--t2'),callbacks:{label:function(ctx){return 'Leq: '+ctx.parsed.y+' dB(A) (เกิน '+(ctx.parsed.y-threshold).toFixed(1)+' dB)';}}}
                     },
-                    scales:{x:{grid:{display:false},ticks:{color:getCSS('--tick'),font:{size:8},maxRotation:60}},y:{min:threshold-5,grid:{color:getCSS('--grid')},ticks:{color:getCSS('--tick'),callback:v=>v+' dB'}}}
+                    scales:{x:{grid:{display:false},ticks:{color:getCSS('--tick'),font:{size:8},maxRotation:60}},y:{min:threshold-5,grid:{color:getCSS('--grid')},ticks:{color:getCSS('--tick'),callback:function(v){return v+' dB';}}}}
                 }
             });
         }
 
         function renderTable(data){
-            $('resultTable').innerHTML=data.map((d,i)=>{
-                return `<tr>
-                    <td style="color:var(--t3)">${i+1}</td>
-                    <td>${d.date}</td><td>${d.time}</td>
-                    <td style="color:var(--accent);font-weight:600">${d.leq}</td>
-                    <td style="color:var(--green)">${d.l90}</td>
-                    <td style="color:var(--purple);font-weight:600">${d.ratingLevelWithAddition}</td>
-                    <td style="color:var(--orange);font-weight:700">${d.disturbance}</td>
-                    <td>
-                        <div class="exceed-bar" style="width:80px;display:inline-block;vertical-align:middle;margin-right:0.5rem">
-                            <div class="exceed-bar-fill" style="width:${Math.min(100,d.pctAbove)}%;background:${d.pctAbove>50?'var(--red)':d.pctAbove>20?'var(--orange)':'var(--yellow)'}"></div>
-                        </div>
-                        <span style="font-weight:600;color:${d.pctAbove>50?'var(--red)':'var(--t2)'}">${d.pctAbove}%</span>
-                    </td>
-                    <td><span class="badge ${d.level.cls}">${d.level.label}</span></td>
-                    ${d.exceedsThreshold?'<td style="color:var(--red);font-weight:700">⚠ เกิน</td>':'<td></td>'}
-                </tr>`;
+            $('resultTable').innerHTML=data.map(function(d,i){
+                return '<tr>'+
+                    '<td style="color:var(--t3)">'+(i+1)+'</td>'+
+                    '<td>'+d.date+'</td><td>'+d.time+'</td>'+
+                    '<td style="color:var(--accent);font-weight:600">'+d.leq+'</td>'+
+                    '<td style="color:var(--green)">'+d.l90+'</td>'+
+                    '<td style="color:var(--purple);font-weight:600">'+d.ratingLevelWithAddition+'</td>'+
+                    '<td style="color:var(--orange);font-weight:700">'+d.disturbance+'</td>'+
+                    '<td>'+
+                        '<div class="exceed-bar" style="width:80px;display:inline-block;vertical-align:middle;margin-right:0.5rem">'+
+                            '<div class="exceed-bar-fill" style="width:'+Math.min(100,d.pctAbove)+'%;background:'+(d.pctAbove>50?'var(--red)':d.pctAbove>20?'var(--orange)':'var(--yellow)')+'"></div>'+
+                        '</div>'+
+                        '<span style="font-weight:600;color:'+(d.pctAbove>50?'var(--red)':'var(--t2)')+'">'+d.pctAbove+'%</span>'+
+                    '</td>'+
+                    '<td><span class="badge '+d.level.cls+'">'+d.level.label+'</span></td>'+
+                    (d.exceedsThreshold?'<td style="color:var(--red);font-weight:700">⚠ เกิน</td>':'<td></td>')+
+                '</tr>';
             }).join('');
         }
 
-        // Export functions
-        window.exportReport=function(){window.print();};
+        function exportReport(){window.print();}
 
-        window.exportCSV=function(){
+        function exportCSV(){
             if(!analysisData.length){alert('กรุณาวิเคราะห์ข้อมูลก่อน');return;}
-            let csv='No,Date,Time,Leq(LAeqTs),L90(LA90),RatingLevel,Addition,Disturbance,%Above,Level,Exceeds\n';
-            analysisData.forEach((d,i)=>{
-                csv+=`${i+1},"${d.date}","${d.time}",${d.leq},${d.l90},${d.ratingLevel},${d.additionValue},${d.disturbance},${d.pctAbove},"${d.level.label}",${d.exceedsThreshold}\n`;
+            var csv='No,Date,Time,Leq(LAeqTs),L90(LA90),RatingLevel,Addition,Disturbance,%Above,Level,Exceeds\n';
+            analysisData.forEach(function(d,i){
+                csv+=(i+1)+',"'+d.date+'","'+d.time+'",'+d.leq+','+d.l90+','+d.ratingLevel+','+d.additionValue+','+d.disturbance+','+d.pctAbove+',"'+d.level.label+'",'+d.exceedsThreshold+'\n';
             });
-            const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
-            const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+            var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+            var a=document.createElement('a');a.href=URL.createObjectURL(blob);
             a.download='noise-analysis-'+$('inpStartDate').value+'-to-'+$('inpEndDate').value+'.csv';
             a.click();
-        };
+        }
 
-        window.exportHTML=function(){
+        function exportHTML(){
             if(!analysisData.length){alert('กรุณาวิเคราะห์ข้อมูลก่อน');return;}
-            const exceedCount=analysisData.filter(d=>d.exceedsThreshold).length;
-            const avgDist=+(analysisData.reduce((s,d)=>s+d.disturbance,0)/analysisData.length).toFixed(1);
-            const maxDist=Math.max(...analysisData.map(d=>d.disturbance));
-            const Ts=parseFloat($('inpTs').value)||60;
-            const Tr=parseFloat($('inpTr').value)||60;
-            const additionValue=getAdditionValue();
-            
-            let html=`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>รายงานวิเคราะห์เสียงรบกวน</title>
-<style>body{font-family:'Sarabun',sans-serif;padding:2rem;color:#333;max-width:900px;margin:0 auto}
-h1{font-size:1.3rem;border-bottom:2px solid #333;padding-bottom:0.5rem}h2{font-size:1rem;margin-top:1.5rem;color:#555}
-table{width:100%;border-collapse:collapse;font-size:0.8rem;margin-top:0.5rem}
-th{background:#f0f0f0;padding:6px 8px;border:1px solid #ddd;text-align:left}td{padding:5px 8px;border:1px solid #ddd}
-.safe{color:green}.warn{color:orange}.crit{color:red}.badge{padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:600}
-.b-safe{background:#dcfce7;color:#16a34a}.b-warn{background:#fef9c3;color:#ca8a04}.b-crit{background:#fee2e2;color:#dc2626}
-.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin:1rem 0}
-.s-card{background:#f8f9fa;border:1px solid #e5e7eb;border-radius:8px;padding:0.75rem;text-align:center}
-.s-card .label{font-size:0.65rem;color:#888;text-transform:uppercase}.s-card .value{font-size:1.2rem;font-weight:700}
-.corr{border-color:#9333ea!important}.corr-value{color:#9333ea}
-@media print{body{padding:1rem}}</style></head><body>
-<h1>รายงานผลการวิเคราะห์เสียงรบกวน</h1>
-<p><strong>สถานที่:</strong> ตลาด Bigfood แหลมฉบัง</p>
-<p><strong>ช่วงวัน-เวลา:</strong> ${$('inpStartDate').value} ${$('inpStartTime').value} ถึง ${$('inpEndDate').value} ${$('inpEndTime').value}</p>
-<p><strong>วิธีคำนวณ:</strong> ตามประกาศคณะกรรมการควบคุมมลพิษ พ.ศ. 2565 สมการที่ 1</p>
-<p><strong>Ts:</strong> ${Ts} นาที | <strong>Tr:</strong> ${Tr} นาที | <strong>บวกเพิ่ม:</strong> ${additionValue} dB</p>
-<p><strong>ระดับเสียงพื้นฐาน (LA90):</strong> ${bgNoiseValue} dB(A)</p>
-<p><strong>ค่าเฝ้าระวัง:</strong> ${threshold} dB(A)</p>
-<div class="summary">
-<div class="s-card"><div class="label">ระดับเสียงพื้นฐาน (LA90)</div><div class="value safe">${bgNoiseValue} dB(A)</div></div>
-<div class="s-card"><div class="label">ค่าระดับการรบกวนเฉลี่ย</div><div class="value" style="color:#f97316">${avgDist} dB(A)</div></div>
-<div class="s-card"><div class="label">ค่าระดับการรบกวนสูงสุด</div><div class="value crit">${maxDist} dB(A)</div></div>
-<div class="s-card"><div class="label">จุดเกินค่าเฝ้าระวัง</div><div class="value" style="color:#eab308">${exceedCount} / ${analysisData.length} จุด</div></div>
-<div class="s-card"><div class="label">% เกินค่าเฝ้าระวัง</div><div class="value" style="color:${exceedCount/analysisData.length>0.1?'#dc2626':'#ca8a04'}">${((exceedCount/analysisData.length)*100).toFixed(1)}%</div></div>
-<div class="s-card"><div class="label">สรุปผล</div><div class="value" style="color:${exceedCount>0?'#dc2626':'#16a34a'};font-size:1rem">${exceedCount>0?'เป็นเสียงรบกวน':'ไม่เป็นเสียงรบกวน'}</div></div>
-</div>`;
-            
-            html+=`<h2>สูตรคำนวณ (สมการที่ 1)</h2>
-<p style="font-family:monospace;background:#f5f5f5;padding:0.75rem;border-radius:4px">LAeq,Tr = [10 log10(10^(0.1×LAeq,Ts) − 10^(0.1×LAeq,R))] + 10 log10(Ts/Tr)</p>
-<p>ค่าระดับการรบกวน = Rating Level − LA90 (ระดับเสียงพื้นฐาน)</p>
-            
-            html+=`<h2>ตารางผลการวิเคราะห์</h2>
-<table><thead><tr><th>#</th><th>วันที่</th><th>เวลา</th><th>Leq (LAeq,Ts)</th><th>L90 (LA90)</th><th>Rating Level</th><th>ค่าระดับการรบกวน</th><th>%สูงกว่า BG</th><th>ระดับ</th></tr></thead><tbody>`;
-            analysisData.forEach((d,i)=>{
-                html+=`<tr><td>${i+1}</td><td>${d.date}</td><td>${d.time}</td><td><strong>${d.leq}</strong></td><td>${d.l90}</td><td style="color:#9333ea"><strong>${d.ratingLevelWithAddition}</strong></td><td class="${d.disturbance>10?'crit':d.disturbance>5?'warn':'safe'}"><strong>${d.disturbance}</strong></td><td>${d.pctAbove}%</td><td><span class="badge ${d.level.cls}">${d.level.label}</span></td></tr>`;
+            var ec=analysisData.filter(function(d){return d.exceedsThreshold;}).length;
+            var ad=+(analysisData.reduce(function(s,d){return s+d.disturbance;},0)/analysisData.length).toFixed(1);
+            var md=Math.max.apply(null,analysisData.map(function(d){return d.disturbance;}));
+            var Ts=parseFloat($('inpTs').value)||60;
+            var Tr=parseFloat($('inpTr').value)||60;
+            var av=getAdditionValue();
+            var h='<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>รายงานวิเคราะห์เสียงรบกวน</title>';
+            h+='<style>body{font-family:sans-serif;padding:2rem;color:#333;max-width:900px;margin:0 auto}h1{font-size:1.3rem;border-bottom:2px solid #333;padding-bottom:0.5rem}h2{font-size:1rem;margin-top:1.5rem;color:#555}table{width:100%;border-collapse:collapse;font-size:0.8rem;margin-top:0.5rem}th{background:#f0f0f0;padding:6px 8px;border:1px solid #ddd;text-align:left}td{padding:5px 8px;border:1px solid #ddd}.safe{color:green}.crit{color:red}.badge{padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:600}.b-safe{background:#dcfce7;color:#16a34a}.b-crit{background:#fee2e2;color:#dc2626}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin:1rem 0}.s-card{background:#f8f9fa;border:1px solid #e5e7eb;border-radius:8px;padding:0.75rem;text-align:center}.s-card .label{font-size:0.65rem;color:#888;text-transform:uppercase}.s-card .value{font-size:1.2rem;font-weight:700}@media print{body{padding:1rem}}</style></head><body>';
+            h+='<h1>รายงานผลการวิเคราะห์เสียงรบกวน</h1>';
+            h+='<p><strong>สถานที่:</strong> ตลาด Bigfood แหลมฉบัง</p>';
+            h+='<p><strong>ช่วงวัน-เวลา:</strong> '+$('inpStartDate').value+' '+$('inpStartTime').value+' ถึง '+$('inpEndDate').value+' '+$('inpEndTime').value+'</p>';
+            h+='<p><strong>วิธีคำนวณ:</strong> ตามประกาศคณะกรรมการควบคุมมลพิษ พ.ศ. 2565 สมการที่ 1</p>';
+            h+='<p><strong>Ts:</strong> '+Ts+' นาที | <strong>Tr:</strong> '+Tr+' นาที | <strong>บวกเพิ่ม:</strong> '+av+' dB</p>';
+            h+='<p><strong>ระดับเสียงพื้นฐาน (LA90):</strong> '+bgNoiseValue+' dB(A)</p>';
+            h+='<p><strong>ค่าเฝ้าระวัง:</strong> '+threshold+' dB(A)</p>';
+            h+='<div class="summary">';
+            h+='<div class="s-card"><div class="label">ระดับเสียงพื้นฐาน (LA90)</div><div class="value safe">'+bgNoiseValue+' dB(A)</div></div>';
+            h+='<div class="s-card"><div class="label">ค่าระดับการรบกวนเฉลี่ย</div><div class="value" style="color:#f97316">'+ad+' dB(A)</div></div>';
+            h+='<div class="s-card"><div class="label">ค่าระดับการรบกวนสูงสุด</div><div class="value crit">'+md+' dB(A)</div></div>';
+            h+='<div class="s-card"><div class="label">จุดเกินค่าเฝ้าระวัง</div><div class="value" style="color:#eab308">'+ec+' / '+analysisData.length+' จุด</div></div>';
+            h+='<div class="s-card"><div class="label">% เกินค่าเฝ้าระวัง</div><div class="value" style="color:'+(ec/analysisData.length>0.1?'#dc2626':'#ca8a04')+'">'+((ec/analysisData.length)*100).toFixed(1)+'%</div></div>';
+            h+='<div class="s-card"><div class="label">สรุปผล</div><div class="value" style="color:'+(ec>0?'#dc2626':'#16a34a')+';font-size:1rem">'+(ec>0?'เป็นเสียงรบกวน':'ไม่เป็นเสียงรบกวน')+'</div></div></div>';
+            h+='<h2>สูตรคำนวณ (สมการที่ 1)</h2>';
+            h+='<p style="font-family:monospace;background:#f5f5f5;padding:0.75rem;border-radius:4px">LAeq,Tr = [10 log10(10^(0.1×LAeq,Ts) − 10^(0.1×LAeq,R))] + 10 log10(Ts/Tr)</p>';
+            h+='<p>ค่าระดับการรบกวน = Rating Level − LA90 (ระดับเสียงพื้นฐาน)</p>';
+            h+='<h2>ตารางผลการวิเคราะห์</h2>';
+            h+='<table><thead><tr><th>#</th><th>วันที่</th><th>เวลา</th><th>Leq</th><th>L90</th><th>Rating Level</th><th>ค่าระดับการรบกวน</th><th>%สูงกว่า BG</th><th>ระดับ</th></tr></thead><tbody>';
+            analysisData.forEach(function(d,i){
+                h+='<tr><td>'+(i+1)+'</td><td>'+d.date+'</td><td>'+d.time+'</td><td><strong>'+d.leq+'</strong></td><td>'+d.l90+'</td><td style="color:#9333ea"><strong>'+d.ratingLevelWithAddition+'</strong></td><td class="'+(d.disturbance>10?'crit':d.disturbance>5?'warn':'safe')+'"><strong>'+d.disturbance+'</strong></td><td>'+d.pctAbove+'%</td><td><span class="badge '+d.level.cls+'">'+d.level.label+'</span></td></tr>';
             });
-            html+=`</tbody></table><p style="margin-top:2rem;font-size:0.75rem;color:#888">รายงานนี้สร้างโดย Sound Monitor Dashboard คำนวณตามประกาศคณะกรรมการควบคุมมลพิษ พ.ศ. 2565 — ${new Date().toLocaleDateString('th-TH')}</p></body></html>`;
-            const blob=new Blob([html],{type:'text/html'});
-            const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+            h+='</tbody></table><p style="margin-top:2rem;font-size:0.75rem;color:#888">รายงานนี้สร้างโดย Sound Monitor Dashboard — '+new Date().toLocaleDateString('th-TH')+'</p></body></html>';
+            var blob=new Blob([h],{type:'text/html'});
+            var a=document.createElement('a');a.href=URL.createObjectURL(blob);
             a.download='noise-report-'+$('inpStartDate').value+'.html';a.click();
-        };
-    })();
+        }
+    </script>
     </script>
 </body>
 </html>
