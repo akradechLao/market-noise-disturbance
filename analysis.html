@@ -512,7 +512,7 @@
                 <div class="summary-card"><div class="summary-label">ค่าระดับการรบกวนสูงสุด</div><div class="summary-value" style="color:var(--red)">${maxDist}<span class="summary-unit"> dB(A)</span></div></div>
                 <div class="summary-card"><div class="summary-label">จุดเกินค่าเฝ้าระวัง (> ${threshold} dB)</div><div class="summary-value" style="color:var(--yellow)">${exceedCount}<span class="summary-unit"> / ${total} จุด</span></div></div>
                 <div class="summary-card"><div class="summary-label">% เกินค่าเฝ้าระวัง</div><div class="summary-value" style="color:${exceedPct>10?'var(--red)':'var(--yellow)'}">${exceedPct}<span class="summary-unit"> %</span></div></div>
-                <div class="summary-card"><div class="summary-label">สรุปผล</div><div class="summary-value" style="color:${exceedCount>0?'var(--red)':'var(--green)'};font-size:1rem">${exceedCount>0?'เป็นเสียงรบกวน':'ไม่เป็นเสียงรบกวน'}</div><div class="summary-item-desc">เกณฑ์: > 10 dB = เป็นเสียงรบกวน</div></div>
+                <div class="summary-card"><div class="summary-label">สรุปผล</div><div class="summary-value" style="color:${exceedCount>0?'var(--red)':'var(--green)'}; font-size:1rem">${exceedCount>0?'เป็นเสียงรบกวน':'ไม่เป็นเสียงรบกวน'}</div><div class="summary-item-desc">เกณฑ์: > 10 dB = เป็นเสียงรบกวน</div></div>
             `;
 
             renderMainChart(data);
